@@ -40,6 +40,30 @@ class SyncEngineTest {
     }
 }
 
+class ForceSyncTest {
+    private fun item(id: String, ts: Long, c: Double, type: MediaType = MediaType.MOVIE) = SyncItem(id, type, "n", c, c >= 1.0, ts)
+
+    @Test fun forcePullTakesRemoteEvenWhenLocalIsNewer() {
+        val plan = SyncEngine.plan(listOf(item("tt1", 500, 0.9)), listOf(item("tt1", 100, 0.2)), prefer = Prefer.REMOTE)
+        assertEquals(SyncAction.PULL, plan.single().action)
+    }
+
+    @Test fun forcePushSendsLocalEvenWhenRemoteIsNewer() {
+        val plan = SyncEngine.plan(listOf(item("tt1", 100, 0.9)), listOf(item("tt1", 500, 0.2)), prefer = Prefer.LOCAL)
+        assertEquals(SyncAction.PUSH, plan.single().action)
+    }
+
+    @Test fun forcedModesLeaveIdenticalItemsAloneAndStillNeverPushShows() {
+        assertTrue(SyncEngine.plan(listOf(item("tt1", 1, 0.5)), listOf(item("tt1", 9, 0.5)), prefer = Prefer.REMOTE).isEmpty())
+        assertTrue(SyncEngine.plan(listOf(item("tt2", 1, 0.9, MediaType.SHOW)), listOf(item("tt2", 9, 0.1, MediaType.SHOW)), prefer = Prefer.LOCAL).isEmpty())
+    }
+
+    @Test fun forcedModesStillCopyOneSidedItemsAndNeverDelete() {
+        val plan = SyncEngine.plan(listOf(item("tt1", 1, 0.5)), listOf(item("tt2", 1, 0.5)), prefer = Prefer.REMOTE)
+        assertEquals(setOf("tt1" to SyncAction.PUSH, "tt2" to SyncAction.PULL), plan.map { it.item.imdbId to it.action }.toSet())
+    }
+}
+
 class StremioItemsTest {
     private fun obj(s: String) = Json.parseToJsonElement(s).jsonObject
     private val movie = obj("""{"_id":"tt0120815","name":"Saving Private Ryan","type":"movie","removed":false,"temp":false,

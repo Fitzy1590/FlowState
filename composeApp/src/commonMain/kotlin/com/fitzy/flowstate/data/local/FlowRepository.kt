@@ -38,6 +38,9 @@ data class LibraryEntry(
 
 /** Local source of truth for library, ratings, interest votes, actor lists and prompt state. */
 class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long) {
+    /** Runs [body] as one database transaction: all of it is saved, or none. */
+    fun <T> inTransaction(body: () -> T): T = db.transactionWithResult { body() }
+
     private val q get() = db.flowQueries
 
     // ---- Library ----
@@ -180,6 +183,25 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
 
     fun saveSummary(show: TitleId, season: Int, episode: Int, lang: String, promptVersion: Int, text: String) =
         q.upsertSummary(show.tmdbId, season.toLong(), episode.toLong(), lang, promptVersion.toLong(), text, clock())
+
+    // ---- Backup access ----
+
+    fun allLibraryRows() = q.selectLibrary().executeAsList()
+    fun allRatingRows() = q.selectRatings().executeAsList()
+    fun allVoteRows() = q.selectVotes().executeAsList()
+    fun allWatchedRows() = q.selectAllWatchedEpisodes().executeAsList()
+
+    fun restoreLibraryRow(
+        type: String, tmdbId: Long, name: String, year: Long?, posterPath: String?, imdbId: String?, genres: String,
+        status: String, completion: Double, abandoned: Long, addedAt: Long, lastActivityAt: Long,
+    ) = q.upsertLibrary(type, tmdbId, name, year, posterPath, imdbId, genres, status, completion, abandoned, addedAt, lastActivityAt)
+
+    fun restoreRating(type: String, tmdbId: Long, score: Long, ratedAt: Long) = q.upsertRating(type, tmdbId, score, ratedAt)
+
+    fun restoreVoteRow(type: String, tmdbId: Long, vote: String, source: String, at: Long, genres: String, keywords: String, cast: String) =
+        q.upsertVote(type, tmdbId, vote, source, at, genres, keywords, cast)
+
+    fun restoreWatched(tmdbId: Long, season: Long, episode: Long, at: Long) = q.markEpisodeWatched(tmdbId, season, episode, at)
 
     // ---- Actors ----
 

@@ -11,6 +11,7 @@ import androidx.core.content.ContextCompat
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.disk.DiskCache
+import com.fitzy.flowstate.app.NoFileTransfer
 import com.fitzy.flowstate.voice.NoVoiceInput
 import okio.Path.Companion.toOkioPath
 import java.io.File
@@ -31,6 +32,7 @@ class MainActivity : ComponentActivity() {
 
         // Things that need a visible activity are handed to the shared layer while this activity exists.
         container.hooks.voice = AndroidVoiceInput(this)
+        container.hooks.files = AndroidFileTransfer(this)
         container.hooks.requestNotificationPermission = { reply ->
             val needsAsk = Build.VERSION.SDK_INT >= 33 &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -50,6 +52,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         val hooks = (application as FlowStateApp).container.hooks
         hooks.voice = NoVoiceInput
+        hooks.files = NoFileTransfer
         hooks.requestNotificationPermission = { it(true) }
         super.onDestroy()
     }

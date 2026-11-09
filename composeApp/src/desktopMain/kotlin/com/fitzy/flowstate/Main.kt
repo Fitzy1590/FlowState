@@ -53,6 +53,7 @@ fun main() = application {
         currentVersion = System.getProperty("flowstate.version") ?: "0.1.0",
         updateInstaller = DesktopUpdateInstaller(http, File(dataDir(), "updates")),
     )
+    container.hooks.files = DesktopFileTransfer()
     // About hourly while the app is open: sync with Stremio. (Notifications are Android only for now.)
     LaunchedEffect(container) {
         while (true) {

@@ -31,7 +31,7 @@ class StremioSync(
      * Pulls the Stremio library, decides per title with [SyncEngine] (latest activity wins) and applies it both ways.
      * A failed library fetch ends the run without changing anything. Nothing is ever deleted on either side.
      */
-    suspend fun sync(): SyncResult {
+    suspend fun sync(prefer: Prefer? = null): SyncResult {
         val key = authKey()?.takeIf { it.isNotBlank() } ?: return SyncResult.NotConnected
         val remoteRaw = api.library(key) ?: return SyncResult.Failed
         val remoteById: Map<String, JsonObject> = remoteRaw.mapNotNull { o -> o["_id"]?.jsonPrimitive?.contentOrNull?.let { it to o } }.toMap()
@@ -46,16 +46,16 @@ class StremioSync(
         val now = clock()
         val pushes = ArrayList<JsonObject>()
         var pulled = 0
-        for (d in SyncEngine.plan(local, remote)) {
+        for (d in SyncEngine.plan(local, remote, prefer = prefer)) {
             when (d.action) {
                 SyncAction.PUSH -> {
                     val existing = remoteById[d.item.imdbId]
                     pushes += if (existing != null) StremioItems.withLocalProgress(existing, d.item, now) else StremioItems.newMovie(d.item, now)
-                    repo.logSync("stremio", d.item.name, "pushed", d.localTs, d.remoteTs)
+                    repo.logSync("stremio", d.item.name, if (prefer != null) "forced push" else "pushed", d.localTs, d.remoteTs)
                 }
                 SyncAction.PULL -> if (applyPull(d.item, localByImdb[d.item.imdbId]?.id)) {
                     pulled++
-                    repo.logSync("stremio", d.item.name, "pulled", d.localTs, d.remoteTs)
+                    repo.logSync("stremio", d.item.name, if (prefer != null) "forced pull" else "pulled", d.localTs, d.remoteTs)
                 }
             }
         }

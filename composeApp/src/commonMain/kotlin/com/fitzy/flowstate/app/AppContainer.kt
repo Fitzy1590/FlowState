@@ -17,7 +17,9 @@ import com.fitzy.flowstate.presenter.SearchPresenter
 import com.fitzy.flowstate.presenter.SyncPresenter
 import com.fitzy.flowstate.ratings.OmdbClient
 import com.fitzy.flowstate.search.ClaudeQueryInterpreter
+import com.fitzy.flowstate.backup.BackupService
 import com.fitzy.flowstate.background.BackgroundWork
+import com.fitzy.flowstate.presenter.BackupPresenter
 import com.fitzy.flowstate.background.NOTIFICATIONS_KEY
 import com.fitzy.flowstate.background.UpcomingService
 import com.fitzy.flowstate.presenter.UpdatePresenter
@@ -78,6 +80,11 @@ class AppContainer(
     private val omdb = OmdbClient(http, apiKey = { secrets.get(SecretNames.OMDB) })
     private val queryInterpreter = ClaudeQueryInterpreter(claude)
     val search = SearchPresenter(repository, catalog, queryInterpreter, aiAvailable = { claude.hasKey }, voice = HookedVoice(hooks), scope = scope)
+    val backup = BackupPresenter(BackupService(repository, clock), hooks, clock) {
+        home.load()
+        discover.load()
+    }
+
     private val upcomingService = UpcomingService(repository, catalog)
     val library = LibraryPresenter(repository, upcomingService, scope)
     val background = BackgroundWork(repository, stremioSync, upcomingService, clock)

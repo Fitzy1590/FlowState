@@ -156,3 +156,10 @@ INSERT OR REPLACE INTO RatingCache(imdbId, imdb, rottenTomatoes, fetchedAt) VALU
 
 selectRatingCache:
 SELECT * FROM RatingCache WHERE imdbId = ?;
+
+upsertLibrary:
+INSERT OR REPLACE INTO LibraryItem(type, tmdbId, name, year, posterPath, imdbId, genres, status, completion, abandoned, addedAt, lastActivityAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAllWatchedEpisodes:
+SELECT * FROM EpisodeWatch;

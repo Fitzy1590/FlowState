@@ -62,7 +62,7 @@ fun App(container: AppContainer) {
                     Tab.Discover -> DiscoverRoute(container.discover)
                     Tab.Search -> SearchRoute(container.search, onOpen = ::openTitle)
                     Tab.Library -> LibraryRoute(container.library, onOpen = ::openTitle)
-                    Tab.Settings -> SettingsRoute(container.settings, container.sync, container.updates)
+                    Tab.Settings -> SettingsRoute(container.settings, container.sync, container.updates, container.backup)
                 }
             }
         }

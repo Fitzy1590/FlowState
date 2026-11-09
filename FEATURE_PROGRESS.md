@@ -24,8 +24,8 @@ Posters: TMDB primary, Metahub fallback.
 | 4a | Stremio sync | S1+S2 done (movies two-way, shows pull-only; login, Sync now, sync at launch); never run against a real Stremio account | conflict-resolution tests; sandbox account run |
 | 4b | Nuvio sync | BLOCKED: Nuvio uses a private Supabase backend (see SPEC 4). Proposed: Trakt bridge | same as 4a |
 | 4c | Background workers (WorkManager, desktop scheduler) | built: Android WorkManager about hourly with network; Windows hourly while open; never run on a device | worker runs on emulator; scheduler test |
-| 4e | Conflict log + force pull/push | partly: sync log stored and last 5 shown in Settings; force pull/push not built | log rows match test conflicts |
-| 4g | Export/import backup | todo | round-trip test |
+| 4e | Conflict log + force pull/push | built: log (last 5 in Settings) and Force pull / Force push with a confirmation; never run against a real account | log rows match test conflicts |
+| 4g | Export/import backup | built: JSON file via system picker (Android) / file dialog (Windows), validated, all-or-nothing, no secrets; picker never used on a device | round-trip test |
 | 4h | Encrypted credential storage | S1 done (store, Android Keystore AES-GCM, Windows DPAPI, Settings screen); on-device and on-Windows check todo | secrets never in plain prefs/logs |
 | 5a | Launch update check | S1+S2 done (6h throttle, skip version, dialog); needs a published release to test end to end | version-compare tests; skipped version persists |
 | 5b | Settings "Check for Updates" + progress | S1+S2 done | progress UI test |

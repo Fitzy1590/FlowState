@@ -4,6 +4,7 @@ import com.fitzy.flowstate.data.local.FlowRepository
 import com.fitzy.flowstate.data.local.SyncLogLine
 import com.fitzy.flowstate.secrets.SecretNames
 import com.fitzy.flowstate.secrets.SecretStore
+import com.fitzy.flowstate.sync.Prefer
 import com.fitzy.flowstate.sync.StremioApi
 import com.fitzy.flowstate.sync.StremioSync
 import com.fitzy.flowstate.sync.SyncResult
@@ -53,6 +54,18 @@ class SyncPresenter(
         _state.value = read().copy(message = "Disconnected. Your library stays on this device.")
     }
 
+    /** Stremio wins for every title that differs. Changes made only on this device since the last sync are overwritten. */
+    fun forcePull() = forced(Prefer.REMOTE)
+
+    /** This app wins for every movie that differs. Stremio's copy is overwritten. */
+    fun forcePush() = forced(Prefer.LOCAL)
+
+    private fun forced(prefer: Prefer) {
+        if (_state.value.busy) return
+        _state.update { it.copy(busy = true, message = null) }
+        scope.launch { runSync(prefer = prefer) }
+    }
+
     fun syncNow() {
         if (_state.value.busy) return
         _state.update { it.copy(busy = true, message = null) }
@@ -66,8 +79,8 @@ class SyncPresenter(
         scope.launch { runSync(quiet = true) }
     }
 
-    private suspend fun runSync(quiet: Boolean = false) {
-        val result = sync.sync()
+    private suspend fun runSync(quiet: Boolean = false, prefer: Prefer? = null) {
+        val result = sync.sync(prefer)
         val msg = when (result) {
             is SyncResult.Done -> if (quiet && result.pushed + result.pulled == 0) null else "Synced: ${result.pulled} updated here, ${result.pushed} sent to Stremio."
             SyncResult.NotConnected -> "Not connected to Stremio."
