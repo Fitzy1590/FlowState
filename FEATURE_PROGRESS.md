@@ -23,7 +23,7 @@ Posters: TMDB primary, Metahub fallback.
 | 3c | Default player + next unwatched + no-app prompt | S1+S2 done: default player in Settings, "Play S2E3" for shows (Stremio only; Nuvio opens the title), not-installed message | next-episode logic tests |
 | 4a | Stremio sync | S1+S2 done (movies two-way, shows pull-only; login, Sync now, sync at launch); never run against a real Stremio account | conflict-resolution tests; sandbox account run |
 | 4b | Nuvio sync | BLOCKED: Nuvio uses a private Supabase backend (see SPEC 4). Proposed: Trakt bridge | same as 4a |
-| 4c | Background workers (WorkManager, desktop scheduler) | todo | worker runs on emulator; scheduler test |
+| 4c | Background workers (WorkManager, desktop scheduler) | built: Android WorkManager about hourly with network; Windows hourly while open; never run on a device | worker runs on emulator; scheduler test |
 | 4e | Conflict log + force pull/push | partly: sync log stored and last 5 shown in Settings; force pull/push not built | log rows match test conflicts |
 | 4g | Export/import backup | todo | round-trip test |
 | 4h | Encrypted credential storage | S1 done (store, Android Keystore AES-GCM, Windows DPAPI, Settings screen); on-device and on-Windows check todo | secrets never in plain prefs/logs |
@@ -33,8 +33,8 @@ Posters: TMDB primary, Metahub fallback.
 | 6a | Android Mobile UI | todo | `assembleDebug`, emulator walkthrough |
 | 6b | Windows Desktop UI | todo | `:composeApp:run`, keyboard-only walkthrough |
 | 6c | Android TV UI | todo | D-pad walkthrough, focus restore works |
-| 6e | New-episode notifications | todo | notification fires on test episode |
-| 6f | Upcoming calendar | todo | shows unwatched upcoming episodes |
+| 6e | New-episode notifications | built (Android): switch in Settings, permission prompt, once per episode on air date; never run on a device. Windows: none yet | notification fires on test episode |
+| 6f | Upcoming calendar | built as an "Upcoming episodes" list at the top of Library (next episode per followed show); no month grid | shows unwatched upcoming episodes |
 | 7a | Watch Trailer button (TMDB video, YouTube link) | S1+S2 done (uses TMDB trailer key, falls back to YouTube search); autoplay depends on YouTube app/browser | link builder tests; no-trailer fallback |
 | 7b | Season trailer (next season after finished) | S1+S2 done (`SeasonPlan` rule, TMDB season videos, button on Episodes tab); live endpoint unverified | visibility logic tests |
 | 7c | Season recap (YouTube search) | S1+S2 done (`YoutubeClient`, falls back to search page without key); live API unverified | with key opens top result; without key opens search |

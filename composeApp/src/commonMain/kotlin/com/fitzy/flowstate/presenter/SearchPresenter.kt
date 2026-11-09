@@ -44,6 +44,9 @@ class SearchPresenter(
     val state: StateFlow<SearchState> = _state.asStateFlow()
     private var query: SearchQuery? = null
 
+    /** The voice input may be attached after startup, so the screen asks again when it appears. */
+    fun refreshVoice() = _state.update { it.copy(voiceAvailable = voice.available) }
+
     fun setText(text: String) = _state.update { it.copy(text = text) }
 
     fun submit() {

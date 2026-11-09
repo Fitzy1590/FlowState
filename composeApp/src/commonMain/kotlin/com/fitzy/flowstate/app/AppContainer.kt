@@ -17,8 +17,9 @@ import com.fitzy.flowstate.presenter.SearchPresenter
 import com.fitzy.flowstate.presenter.SyncPresenter
 import com.fitzy.flowstate.ratings.OmdbClient
 import com.fitzy.flowstate.search.ClaudeQueryInterpreter
-import com.fitzy.flowstate.voice.NoVoiceInput
-import com.fitzy.flowstate.voice.VoiceInput
+import com.fitzy.flowstate.background.BackgroundWork
+import com.fitzy.flowstate.background.NOTIFICATIONS_KEY
+import com.fitzy.flowstate.background.UpcomingService
 import com.fitzy.flowstate.presenter.UpdatePresenter
 import com.fitzy.flowstate.update.UpdateChecker
 import com.fitzy.flowstate.update.UpdateInstaller
@@ -48,7 +49,7 @@ class AppContainer(
     private val scope: CoroutineScope,
     currentVersion: String,
     updateInstaller: UpdateInstaller,
-    voice: VoiceInput = NoVoiceInput,
+    val hooks: ActivityHooks = ActivityHooks(),
 ) {
     val repository = FlowRepository(FlowDatabase(driver), clock)
     private val catalog: Catalog = SecretAwareCatalog(secrets, http, seeds = { repository.profile().likedSeeds }, clock = clock)
@@ -76,8 +77,10 @@ class AppContainer(
 
     private val omdb = OmdbClient(http, apiKey = { secrets.get(SecretNames.OMDB) })
     private val queryInterpreter = ClaudeQueryInterpreter(claude)
-    val search = SearchPresenter(repository, catalog, queryInterpreter, aiAvailable = { claude.hasKey }, voice = voice, scope = scope)
-    val library = LibraryPresenter(repository)
+    val search = SearchPresenter(repository, catalog, queryInterpreter, aiAvailable = { claude.hasKey }, voice = HookedVoice(hooks), scope = scope)
+    private val upcomingService = UpcomingService(repository, catalog)
+    val library = LibraryPresenter(repository, upcomingService, scope)
+    val background = BackgroundWork(repository, stremioSync, upcomingService, clock)
 
     fun episodesFor(c: Candidate) = EpisodesPresenter(c, repository, catalog, summarizer, youtube, launcher, scope)
 
@@ -89,6 +92,9 @@ class AppContainer(
         setPlayer = { repository.putSetting(DEFAULT_PLAYER_KEY, it.name) },
         actors = { repository.actorRows() },
         clearActor = { repository.setActorPref(it, "", null) },
+        getNotifications = { repository.getSetting(NOTIFICATIONS_KEY) == "true" },
+        setNotifications = { repository.putSetting(NOTIFICATIONS_KEY, it.toString()) },
+        requestNotificationPermission = { reply -> hooks.requestNotificationPermission(reply) },
     ) {
         home.load()
         discover.load()

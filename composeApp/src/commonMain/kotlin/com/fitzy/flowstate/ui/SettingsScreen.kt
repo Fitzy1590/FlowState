@@ -24,7 +24,7 @@ fun SettingsRoute(presenter: SettingsPresenter, sync: SyncPresenter, updates: Up
     val state by presenter.state.collectAsState()
     val syncState by sync.state.collectAsState()
     val updateState by updates.state.collectAsState()
-    SettingsScreen(state, presenter::save, presenter::clear, presenter::setDefaultPlayer, presenter::removeActor, syncState, sync::login, sync::syncNow, sync::logout, updateState, updates::checkNow, updates::install, updates::dismissMessage)
+    SettingsScreen(state, presenter::save, presenter::clear, presenter::setDefaultPlayer, presenter::removeActor, presenter::setNotificationsEnabled, presenter::dismissMessage, syncState, sync::login, sync::syncNow, sync::logout, updateState, updates::checkNow, updates::install, updates::dismissMessage)
 }
 
 @Composable
@@ -34,6 +34,8 @@ fun SettingsScreen(
     onClear: (String) -> Unit,
     onPlayer: (Player) -> Unit = {},
     onRemoveActor: (Long) -> Unit = {},
+    onNotifications: (Boolean) -> Unit = {},
+    onDismissSettingsMessage: () -> Unit = {},
     sync: SyncState = SyncState(),
     onLogin: (String, String) -> Unit = { _, _ -> },
     onSync: () -> Unit = {},
@@ -52,6 +54,14 @@ fun SettingsScreen(
         KeyField("TMDB read access token", "Needed for real posters and recommendations. Use the long v4 token.", SecretNames.TMDB, state.tmdbSet, onSave, onClear)
         KeyField("Claude API key", "Needed for AI search and episode summaries.", SecretNames.CLAUDE, state.claudeSet, onSave, onClear)
         KeyField("YouTube Data API key", "Optional. Lets season recaps open the top result.", SecretNames.YOUTUBE, state.youtubeSet, onSave, onClear)
+        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("New episode notifications", style = MaterialTheme.typography.titleMedium)
+                Text("A notification on the day a new episode of a show in your library airs. Checked about once an hour.", style = MaterialTheme.typography.bodySmall)
+            }
+            Switch(checked = state.notifications, onCheckedChange = onNotifications)
+        }
+        state.message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
         PlayerSection(state, onPlayer)
         ActorsSection(state, onRemoveActor)
         StremioSection(sync, onLogin, onSync, onLogout)

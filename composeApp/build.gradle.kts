@@ -41,6 +41,7 @@ kotlin {
             implementation(libs.sqldelight.android.driver)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.coil.network.okhttp)
+            implementation(libs.androidx.work.runtime)
         }
         val desktopMain by getting {
             dependencies {

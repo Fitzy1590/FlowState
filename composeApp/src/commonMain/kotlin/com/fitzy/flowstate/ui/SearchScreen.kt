@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -21,6 +22,7 @@ import com.fitzy.flowstate.presenter.SearchState
 
 @Composable
 fun SearchRoute(p: SearchPresenter, onOpen: (Candidate) -> Unit) {
+    LaunchedEffect(Unit) { p.refreshVoice() }
     val state by p.state.collectAsState()
     SearchScreen(state, p::setText, p::submit, p::removeChip, p::add, onOpen, p::startVoice, p::stopVoice, p::dismissMessage)
 }

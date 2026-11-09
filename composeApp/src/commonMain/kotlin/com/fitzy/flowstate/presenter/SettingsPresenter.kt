@@ -15,6 +15,8 @@ data class SettingsState(
     val claudeSet: Boolean = false,
     val youtubeSet: Boolean = false,
     val omdbSet: Boolean = false,
+    val notifications: Boolean = false,
+    val message: String? = null,
 )
 
 class SettingsPresenter(
@@ -23,6 +25,9 @@ class SettingsPresenter(
     private val setPlayer: (Player) -> Unit = {},
     private val actors: () -> List<ActorRow> = { emptyList() },
     private val clearActor: (Long) -> Unit = {},
+    private val getNotifications: () -> Boolean = { false },
+    private val setNotifications: (Boolean) -> Unit = {},
+    private val requestNotificationPermission: ((Boolean) -> Unit) -> Unit = { it(true) },
     private val onChanged: () -> Unit,
 ) {
     private val _state = MutableStateFlow(read())
@@ -42,6 +47,17 @@ class SettingsPresenter(
         setPlayer(p)
         _state.value = read()
     }
+
+    /** Turning on asks for notification permission first; if it is refused the switch stays off and says why. */
+    fun setNotificationsEnabled(on: Boolean) {
+        if (!on) { setNotifications(false); _state.value = read(); return }
+        requestNotificationPermission { granted ->
+            if (granted) { setNotifications(true); _state.value = read() }
+            else { setNotifications(false); _state.value = read().copy(message = "Notifications are blocked. Allow them for FlowState in system settings.") }
+        }
+    }
+
+    fun dismissMessage() { _state.value = _state.value.copy(message = null) }
 
     fun removeActor(id: Long) {
         clearActor(id)
@@ -63,6 +79,7 @@ class SettingsPresenter(
         claudeSet = secrets.get(SecretNames.CLAUDE) != null,
         youtubeSet = secrets.get(SecretNames.YOUTUBE) != null,
         omdbSet = secrets.get(SecretNames.OMDB) != null,
+        notifications = getNotifications(),
     )
 
     private companion object {

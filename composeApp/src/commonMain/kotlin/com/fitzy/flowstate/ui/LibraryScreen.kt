@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.fitzy.flowstate.background.UpcomingItem
 import com.fitzy.flowstate.data.local.LibraryItemView
 import com.fitzy.flowstate.data.local.LibraryStatus
 import com.fitzy.flowstate.domain.Candidate
@@ -21,11 +22,12 @@ import com.fitzy.flowstate.presenter.LibraryPresenter
 fun LibraryRoute(p: LibraryPresenter, onOpen: (Candidate) -> Unit) {
     LaunchedEffect(Unit) { p.refresh() }
     val items by p.items.collectAsState()
-    LibraryScreen(items, onOpen)
+    val upcoming by p.upcoming.collectAsState()
+    LibraryScreen(items, upcoming, onOpen)
 }
 
 @Composable
-fun LibraryScreen(items: List<LibraryItemView>, onOpen: (Candidate) -> Unit) {
+fun LibraryScreen(items: List<LibraryItemView>, upcoming: List<UpcomingItem>, onOpen: (Candidate) -> Unit) {
     if (items.isEmpty()) {
         Column(Modifier.fillMaxSize().padding(16.dp)) {
             Text("Your library is empty", style = MaterialTheme.typography.titleLarge)
@@ -34,6 +36,19 @@ fun LibraryScreen(items: List<LibraryItemView>, onOpen: (Candidate) -> Unit) {
         return
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (upcoming.isNotEmpty()) {
+            item { Text("Upcoming episodes", style = MaterialTheme.typography.titleLarge) }
+            items(upcoming, key = { "up-${it.show.id.tmdbId}-${it.episode.season}-${it.episode.episode}" }) { u ->
+                Row(Modifier.fillMaxWidth().clickable { onOpen(u.show) }, verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(u.show.name, style = MaterialTheme.typography.titleSmall)
+                        Text("S${u.episode.season}E${u.episode.episode}${if (u.episode.name.isNotBlank()) "  ·  ${u.episode.name}" else ""}", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Text(u.episode.airDate, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+            item { Text("Your library", style = MaterialTheme.typography.titleLarge) }
+        }
         items(items, key = { "${it.candidate.id.type}-${it.candidate.id.tmdbId}" }) { v ->
             Row(Modifier.fillMaxWidth().clickable { onOpen(v.candidate) }, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 PosterCard(v.candidate, Modifier.width(64.dp))

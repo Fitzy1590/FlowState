@@ -1,44 +1,42 @@
 package com.fitzy.flowstate
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.disk.DiskCache
-import com.fitzy.flowstate.app.AppContainer
-import com.fitzy.flowstate.data.tmdb.withTmdbJson
-import com.fitzy.flowstate.db.FlowDatabase
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import com.fitzy.flowstate.voice.NoVoiceInput
 import okio.Path.Companion.toOkioPath
 import java.io.File
 
 private const val POSTER_CACHE_BYTES = 100L * 1024 * 1024
 
 class MainActivity : ComponentActivity() {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var notificationReply: ((Boolean) -> Unit)? = null
+
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        notificationReply?.invoke(granted)
+        notificationReply = null
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val driver = AndroidSqliteDriver(FlowDatabase.Schema, applicationContext, "flowstate.db")
-        val http = HttpClient(OkHttp).withTmdbJson()
-        val version = packageManager.getPackageInfo(packageName, 0).versionName ?: "0.0.0"
-        val container = AppContainer(
-            driver, clock = System::currentTimeMillis,
-            secrets = androidSecretStore(applicationContext),
-            http = http,
-            launcher = AndroidLinkLauncher(this),
-            scope = scope,
-            currentVersion = version,
-            updateInstaller = AndroidUpdateInstaller(applicationContext, http),
-            voice = AndroidVoiceInput(this),
-        )
+        val container = (application as FlowStateApp).container
+
+        // Things that need a visible activity are handed to the shared layer while this activity exists.
+        container.hooks.voice = AndroidVoiceInput(this)
+        container.hooks.requestNotificationPermission = { reply ->
+            val needsAsk = Build.VERSION.SDK_INT >= 33 &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            if (needsAsk) { notificationReply = reply; notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) } else reply(true)
+        }
+
         setContent {
             setSingletonImageLoaderFactory { context ->
                 ImageLoader.Builder(context)
@@ -50,7 +48,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        scope.cancel()
+        val hooks = (application as FlowStateApp).container.hooks
+        hooks.voice = NoVoiceInput
+        hooks.requestNotificationPermission = { it(true) }
         super.onDestroy()
     }
 }
