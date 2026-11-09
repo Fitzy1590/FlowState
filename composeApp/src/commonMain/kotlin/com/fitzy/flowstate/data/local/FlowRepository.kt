@@ -33,6 +33,9 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
         )
     }
 
+    fun addToLibrary(c: Candidate, status: LibraryStatus = LibraryStatus.PLANNED) =
+        addToLibrary(TmdbTitle(c.id, c.name, c.year, c.posterPath, c.genres, c.voteAverage), c.imdbId, status)
+
     fun libraryIds(): Set<TitleId> = q.selectLibrary().executeAsList().map { TitleId(MediaType.valueOf(it.type), it.tmdbId) }.toSet()
 
     fun setProgress(id: TitleId, status: LibraryStatus, completion: Double, abandoned: Boolean = false) {
@@ -47,6 +50,9 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
         ?.let {
             LibraryEntry(TitleId(MediaType.valueOf(it.type), it.tmdbId), it.name, it.year?.toInt(), it.posterPath, it.completion, it.lastActivityAt)
         }
+
+    fun libraryStatus(id: TitleId): String? =
+        q.selectLibrary().executeAsList().firstOrNull { it.type == id.type.name && it.tmdbId == id.tmdbId }?.status
 
     fun removeFromLibrary(id: TitleId) = q.deleteLibraryItem(id.type.name, id.tmdbId)
 
@@ -103,6 +109,25 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
         addToLibrary(t, imdbId)
         if (voteFor(t.id) == null) castVote(t.id, Vote.YES, source, features)
     }
+
+    // ---- Episodes ----
+
+    fun setEpisodeWatched(show: TitleId, season: Int, episode: Int, watched: Boolean) {
+        if (watched) q.markEpisodeWatched(show.tmdbId, season.toLong(), episode.toLong(), clock())
+        else q.unmarkEpisodeWatched(show.tmdbId, season.toLong(), episode.toLong())
+    }
+
+    /** Watched episodes of a show as (season, episode) pairs. */
+    fun watchedEpisodes(show: TitleId): Set<Pair<Int, Int>> =
+        q.selectWatchedEpisodes(show.tmdbId).executeAsList().map { it.season.toInt() to it.episode.toInt() }.toSet()
+
+    /** Cached AI text for an episode (or a season when [episode] is 0). Null if missing or from an older prompt version. */
+    fun summary(show: TitleId, season: Int, episode: Int, lang: String, promptVersion: Int): String? =
+        q.selectSummary(show.tmdbId, season.toLong(), episode.toLong(), lang).executeAsOneOrNull()
+            ?.takeIf { it.promptVersion == promptVersion.toLong() }?.text
+
+    fun saveSummary(show: TitleId, season: Int, episode: Int, lang: String, promptVersion: Int, text: String) =
+        q.upsertSummary(show.tmdbId, season.toLong(), episode.toLong(), lang, promptVersion.toLong(), text, clock())
 
     // ---- Actors ----
 

@@ -27,6 +27,8 @@ object DeepLinks {
 object TrailerLinks {
     fun watch(youtubeKey: String) = "https://www.youtube.com/watch?v=$youtubeKey"
 
+    fun searchFor(query: String) = "https://www.youtube.com/results?search_query=${query.encodeURLParameter()}"
+
     /** Fallback when TMDB has no trailer: a search page, which cannot autoplay. */
     fun search(name: String, year: Int?): String {
         val q = listOfNotNull(name, year?.toString(), "official trailer").joinToString(" ")

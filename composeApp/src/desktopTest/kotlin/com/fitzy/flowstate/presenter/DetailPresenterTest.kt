@@ -1,6 +1,7 @@
 package com.fitzy.flowstate.presenter
 
 import com.fitzy.flowstate.data.Catalog
+import com.fitzy.flowstate.data.tmdb.EpisodeInfo
 import com.fitzy.flowstate.data.tmdb.TmdbDetails
 import com.fitzy.flowstate.data.tmdb.TmdbTitle
 import com.fitzy.flowstate.domain.*
@@ -19,6 +20,8 @@ class DetailPresenterTest {
 
     private fun catalog(imdb: String? = "tt0185906", trailer: String? = "yt1") = object : Catalog {
         override suspend fun pool() = emptyList<Candidate>()
+        override suspend fun seasonEpisodes(show: TitleId, season: Int) = emptyList<EpisodeInfo>()
+        override suspend fun seasonTrailerKey(show: TitleId, season: Int): String? = null
         override suspend fun details(id: TitleId) = TmdbDetails(
             TmdbTitle(id, c.name, c.year, null, c.genres, 8.5), imdb, emptyList(), emptySet(), trailer, "Easy Company.",
         )
@@ -85,6 +88,8 @@ class DetailPresenterTest {
     @Test fun detailsFailureStillShowsBasics() {
         val failing = object : Catalog {
             override suspend fun pool() = emptyList<Candidate>()
+            override suspend fun seasonEpisodes(show: TitleId, season: Int) = emptyList<EpisodeInfo>()
+            override suspend fun seasonTrailerKey(show: TitleId, season: Int): String? = null
             override suspend fun details(id: TitleId): TmdbDetails? = error("network down")
         }
         val s = presenter(failing).state.value

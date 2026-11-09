@@ -9,7 +9,9 @@ import androidx.compose.ui.Modifier
 import com.fitzy.flowstate.app.AppContainer
 import com.fitzy.flowstate.theme.FlowStateTheme
 import com.fitzy.flowstate.ui.DiscoverRoute
+import com.fitzy.flowstate.domain.MediaType
 import com.fitzy.flowstate.presenter.DetailPresenter
+import com.fitzy.flowstate.presenter.EpisodesPresenter
 import com.fitzy.flowstate.ui.DetailRoute
 import com.fitzy.flowstate.ui.HomeRoute
 import com.fitzy.flowstate.ui.PlatformBackHandler
@@ -21,7 +23,7 @@ private enum class Tab(val label: String) { Home("Home"), Discover("Discover"), 
 @Composable
 fun App(container: AppContainer) {
     var tab by remember { mutableStateOf(Tab.Home) }
-    var detail by remember { mutableStateOf<DetailPresenter?>(null) }
+    var detail by remember { mutableStateOf<Pair<DetailPresenter, EpisodesPresenter?>?>(null) }
     LaunchedEffect(container) {
         container.home.load()
         container.discover.load()
@@ -41,11 +43,14 @@ fun App(container: AppContainer) {
                 val open = detail
                 if (open != null) {
                     PlatformBackHandler { detail = null }
-                    DetailRoute(open, onBack = { detail = null })
+                    DetailRoute(open.first, open.second, onBack = { detail = null })
                     return@Column
                 }
                 when (tab) {
-                    Tab.Home -> HomeRoute(container.home, onOpen = { c -> detail = container.detailFor(c).also { it.load() } })
+                    Tab.Home -> HomeRoute(container.home, onOpen = { c ->
+                        val eps = if (c.id.type == MediaType.SHOW) container.episodesFor(c).also { it.load() } else null
+                        detail = container.detailFor(c).also { it.load() } to eps
+                    })
                     Tab.Discover -> DiscoverRoute(container.discover)
                     Tab.Settings -> SettingsRoute(container.settings)
                 }

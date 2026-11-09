@@ -32,11 +32,30 @@ internal data class DetailsDto(
     val genres: List<IdName> = emptyList(),
     @SerialName("vote_average") val voteAverage: Double = 0.0,
     val overview: String? = null,
+    val seasons: List<SeasonDto> = emptyList(),
     @SerialName("imdb_id") val imdbId: String? = null,
     @SerialName("external_ids") val externalIds: ExternalIds? = null,
     val credits: Credits? = null,
     val keywords: KeywordsDto? = null,
     val videos: VideosDto? = null,
+)
+
+@Serializable
+internal data class SeasonDto(
+    @SerialName("season_number") val number: Int,
+    @SerialName("episode_count") val episodeCount: Int = 0,
+    val name: String = "",
+)
+
+@Serializable internal data class SeasonResponse(val episodes: List<EpisodeDto> = emptyList())
+
+@Serializable
+internal data class EpisodeDto(
+    @SerialName("episode_number") val number: Int,
+    @SerialName("season_number") val season: Int = 0,
+    val name: String = "",
+    val overview: String? = null,
+    @SerialName("air_date") val airDate: String? = null,
 )
 
 @Serializable internal data class IdName(val id: Int, val name: String = "")
@@ -81,7 +100,12 @@ data class TmdbDetails(
     /** YouTube key of the best trailer, if any. */
     val trailerKey: String?,
     val overview: String = "",
+    val seasons: List<SeasonInfo> = emptyList(),
 )
+
+data class SeasonInfo(val number: Int, val episodeCount: Int, val name: String)
+
+data class EpisodeInfo(val season: Int, val number: Int, val name: String, val overview: String, val airDate: String?)
 
 data class DiscoverQuery(
     val genres: Set<Int> = emptySet(),

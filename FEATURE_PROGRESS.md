@@ -36,9 +36,9 @@ Posters: TMDB primary, Metahub fallback.
 | 6e | New-episode notifications | todo | notification fires on test episode |
 | 6f | Upcoming calendar | todo | shows unwatched upcoming episodes |
 | 7a | Watch Trailer button (TMDB video, YouTube link) | S1+S2 done (uses TMDB trailer key, falls back to YouTube search); autoplay depends on YouTube app/browser | link builder tests; no-trailer fallback |
-| 7b | Season trailer (next season after finished) | todo | visibility logic tests |
-| 7c | Season recap (YouTube search) | todo | with key opens top result; without key opens search |
-| 7d | AI episode summaries + season catch-up | todo | no summary for unwatched episodes; cache hit test |
+| 7b | Season trailer (next season after finished) | S1+S2 done (`SeasonPlan` rule, TMDB season videos, button on Episodes tab); live endpoint unverified | visibility logic tests |
+| 7c | Season recap (YouTube search) | S1+S2 done (`YoutubeClient`, falls back to search page without key); live API unverified | with key opens top result; without key opens search |
+| 7d | AI episode summaries + season catch-up | S1+S2 done (Claude Haiku client, cache per episode, watched-only rule); live Claude call never run | no summary for unwatched episodes; cache hit test |
 | 8a | Periodic "interested?" prompt (Yes / Maybe / Never) | S1 done (`InterestPrompter` rules + vote store); card UI first pass on Home (sample data), device check todo | frequency + back-off tests; votes change scores |
 | 8b | Discover swipe tab + quick add to library | S1 done (votes, `quickAdd`); swipe UI first pass (touch drag, keys), device check todo | swipe/keys/D-pad map to votes; undo works; add writes library |
 | 8c | AI search (text, structured query -> TMDB) | todo | parsed-query tests for both example prompts; no invented titles |
@@ -46,7 +46,7 @@ Posters: TMDB primary, Metahub fallback.
 | 8e | Windows voice (v1 hint, v2 Vosk) | todo | v1: hint shown; v2: offline recognition test |
 
 ## Detail page (first pass)
-Tap a poster on Home to open it. Two panes when wide (poster, actions left; overview right), one column when narrow; Esc or Back returns. Actions: Play in Stremio, Open in Nuvio, Watch trailer, Add to library, Rate 0-100. Not built yet: Episodes / Cast / Similar tabs, IMDb and Rotten Tomatoes badges, season trailer and recap, AI episode summaries, default-player setting and next-episode logic (3c). Screen not yet seen rendered (no way to click in the headless run).
+Tap a poster on Home to open it. Two panes when wide (poster, actions left; overview right), one column when narrow; Esc or Back returns. Actions: Play in Stremio, Open in Nuvio, Watch trailer, Add to library, Rate 0-100. Episodes tab built (shows only): season chips, watched checkboxes that drive library progress, per-episode "Summary", "Catch me up", season trailer and recap buttons; unwatched episodes show no description. Not built yet: Cast / Similar tabs, IMDb and Rotten Tomatoes badges, season trailer and recap, AI episode summaries, default-player setting and next-episode logic (3c). Screen not yet seen rendered (no way to click in the headless run).
 
 ## Open items
 - Verify every **[verify]** item in `SPEC.md` before coding it.

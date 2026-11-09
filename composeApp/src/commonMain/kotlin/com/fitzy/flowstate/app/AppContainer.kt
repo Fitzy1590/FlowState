@@ -5,7 +5,13 @@ import com.fitzy.flowstate.data.Catalog
 import com.fitzy.flowstate.data.SecretAwareCatalog
 import com.fitzy.flowstate.data.local.FlowRepository
 import com.fitzy.flowstate.db.FlowDatabase
+import com.fitzy.flowstate.data.ai.ClaudeClient
+import com.fitzy.flowstate.data.ai.ClaudeSummarizer
+import com.fitzy.flowstate.data.ai.Summarizer
+import com.fitzy.flowstate.data.youtube.YoutubeClient
 import com.fitzy.flowstate.domain.Candidate
+import com.fitzy.flowstate.presenter.EpisodesPresenter
+import com.fitzy.flowstate.secrets.SecretNames
 import com.fitzy.flowstate.links.LinkLauncher
 import com.fitzy.flowstate.presenter.DetailPresenter
 import com.fitzy.flowstate.presenter.DiscoverPresenter
@@ -31,6 +37,12 @@ class AppContainer(
     private val recommender = Recommender(currentYear = yearOf(clock()))
     val home = HomePresenter(repository, catalog, recommender, InterestPrompter(), scope, clock)
     val discover = DiscoverPresenter(repository, catalog, recommender, scope)
+    private val claude = ClaudeClient(http, apiKey = { secrets.get(SecretNames.CLAUDE) })
+    private val summarizer: Summarizer = ClaudeSummarizer(claude)
+    private val youtube = YoutubeClient(http, apiKey = { secrets.get(SecretNames.YOUTUBE) })
+
+    fun episodesFor(c: Candidate) = EpisodesPresenter(c, repository, catalog, summarizer, youtube, launcher, scope)
+
     fun detailFor(c: Candidate) = DetailPresenter(c, repository, catalog, launcher, scope)
 
     val settings = SettingsPresenter(secrets) {

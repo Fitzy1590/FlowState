@@ -13,17 +13,19 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.unit.dp
 import com.fitzy.flowstate.links.parseScore
 import com.fitzy.flowstate.presenter.DetailPresenter
+import com.fitzy.flowstate.presenter.EpisodesPresenter
 import com.fitzy.flowstate.presenter.DetailState
 import com.fitzy.flowstate.presenter.Player
 import com.fitzy.flowstate.theme.FlowColors
 
 @Composable
-fun DetailRoute(presenter: DetailPresenter, onBack: () -> Unit) {
+fun DetailRoute(presenter: DetailPresenter, episodes: EpisodesPresenter?, onBack: () -> Unit) {
     val state by presenter.state.collectAsState()
     DetailScreen(
         state, onBack,
         onRate = presenter::rate, onAdd = presenter::addToLibrary,
         onPlay = presenter::play, onTrailer = presenter::watchTrailer, onDismissMessage = presenter::dismissMessage,
+        episodes = episodes?.let { ep -> { EpisodesRoute(ep) } },
     )
 }
 
@@ -37,6 +39,7 @@ fun DetailScreen(
     onPlay: (Player) -> Unit,
     onTrailer: () -> Unit,
     onDismissMessage: () -> Unit,
+    episodes: (@Composable () -> Unit)? = null,
 ) {
     var rating by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
@@ -57,13 +60,14 @@ fun DetailScreen(
                         PosterCard(state.candidate, Modifier.fillMaxWidth())
                         actions()
                     }
-                    Overview(state, Modifier.weight(1f).verticalScroll(rememberScrollState()))
+                    RightPane(state, episodes, Modifier.weight(1f))
                 }
             } else {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     PosterCard(state.candidate, Modifier.width(200.dp))
                     Overview(state, Modifier)
                     actions()
+                    episodes?.invoke()
                 }
             }
         }
@@ -74,6 +78,24 @@ fun DetailScreen(
     }
     state.message?.let {
         AlertDialog(onDismissRequest = onDismissMessage, confirmButton = { TextButton(onClick = onDismissMessage) { Text("OK") } }, text = { Text(it) })
+    }
+}
+
+/** Overview and, for shows, an Episodes tab. */
+@Composable
+private fun RightPane(state: DetailState, episodes: (@Composable () -> Unit)?, modifier: Modifier) {
+    var tab by remember { mutableStateOf(0) }
+    Column(modifier) {
+        if (episodes != null) {
+            TabRow(selectedTabIndex = tab, containerColor = MaterialTheme.colorScheme.background) {
+                Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Overview") })
+                Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Episodes") })
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            if (tab == 1 && episodes != null) episodes() else Overview(state, Modifier)
+        }
     }
 }
 

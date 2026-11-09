@@ -46,6 +46,26 @@ CREATE TABLE Setting (
     v TEXT NOT NULL
 );
 
+CREATE TABLE EpisodeWatch (
+    tmdbId INTEGER NOT NULL,
+    season INTEGER NOT NULL,
+    episode INTEGER NOT NULL,
+    watchedAt INTEGER NOT NULL,
+    PRIMARY KEY (tmdbId, season, episode)
+);
+
+-- episode = 0 holds the season catch-up text.
+CREATE TABLE EpisodeSummary (
+    tmdbId INTEGER NOT NULL,
+    season INTEGER NOT NULL,
+    episode INTEGER NOT NULL,
+    lang TEXT NOT NULL,
+    promptVersion INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    createdAt INTEGER NOT NULL,
+    PRIMARY KEY (tmdbId, season, episode, lang)
+);
+
 insertLibraryIfMissing:
 INSERT OR IGNORE INTO LibraryItem(type, tmdbId, name, year, posterPath, imdbId, genres, status, completion, abandoned, addedAt, lastActivityAt)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
@@ -89,3 +109,18 @@ SELECT v FROM Setting WHERE k = ?;
 
 putSetting:
 INSERT OR REPLACE INTO Setting(k, v) VALUES (?, ?);
+
+markEpisodeWatched:
+INSERT OR REPLACE INTO EpisodeWatch(tmdbId, season, episode, watchedAt) VALUES (?, ?, ?, ?);
+
+unmarkEpisodeWatched:
+DELETE FROM EpisodeWatch WHERE tmdbId = ? AND season = ? AND episode = ?;
+
+selectWatchedEpisodes:
+SELECT season, episode FROM EpisodeWatch WHERE tmdbId = ?;
+
+upsertSummary:
+INSERT OR REPLACE INTO EpisodeSummary(tmdbId, season, episode, lang, promptVersion, text, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+selectSummary:
+SELECT text, promptVersion FROM EpisodeSummary WHERE tmdbId = ? AND season = ? AND episode = ? AND lang = ?;

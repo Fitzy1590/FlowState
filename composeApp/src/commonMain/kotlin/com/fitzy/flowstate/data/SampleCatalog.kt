@@ -1,5 +1,6 @@
 package com.fitzy.flowstate.data
 
+import com.fitzy.flowstate.data.tmdb.EpisodeInfo
 import com.fitzy.flowstate.data.tmdb.TmdbDetails
 import com.fitzy.flowstate.data.tmdb.TmdbTitle
 import com.fitzy.flowstate.domain.Candidate
@@ -25,6 +26,10 @@ class SampleCatalog : Catalog {
             imdbId = it.imdbId, cast = emptyList(), keywords = emptySet(), trailerKey = null,
         )
     }
+
+    override suspend fun seasonEpisodes(show: TitleId, season: Int): List<EpisodeInfo> = emptyList()
+
+    override suspend fun seasonTrailerKey(show: TitleId, season: Int): String? = null
 
     private val all = listOf(
         m(857, "tt0120815", "Saving Private Ryan", 1998, 8.2, 18, 10752),

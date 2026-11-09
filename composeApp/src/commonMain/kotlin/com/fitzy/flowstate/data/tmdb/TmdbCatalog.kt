@@ -34,6 +34,12 @@ class TmdbCatalog(
 
     override suspend fun details(id: TitleId): TmdbDetails? = detailsFor(id)
 
+    override suspend fun seasonEpisodes(show: TitleId, season: Int): List<EpisodeInfo> =
+        runCatching { client.seasonEpisodes(show.tmdbId, season) }.getOrDefault(emptyList())
+
+    override suspend fun seasonTrailerKey(show: TitleId, season: Int): String? =
+        runCatching { client.seasonTrailerKey(show.tmdbId, season) }.getOrNull()
+
     private suspend fun build(): List<Candidate> {
         val popular = MediaType.entries.flatMap { client.popular(it) }
 

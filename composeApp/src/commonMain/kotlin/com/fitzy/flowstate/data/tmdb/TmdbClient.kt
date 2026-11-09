@@ -68,7 +68,19 @@ class TmdbClient(
             keywords = dto.keywords?.let { (it.keywords + it.results).map { k -> k.id }.toSet() } ?: emptySet(),
             trailerKey = dto.videos?.bestTrailerKey(),
             overview = dto.overview.orEmpty(),
+            seasons = dto.seasons.map { SeasonInfo(it.number, it.episodeCount, it.name) },
         )
+    }
+
+    suspend fun seasonEpisodes(show: Long, season: Int): List<EpisodeInfo> {
+        val resp: SeasonResponse = http.get("$baseUrl/tv/$show/season/$season") { authorize() }.body()
+        return resp.episodes.map { EpisodeInfo(season, it.number, it.name, it.overview.orEmpty(), it.airDate) }
+    }
+
+    /** Season trailer from TMDB's season videos endpoint (not yet checked against the live API). */
+    suspend fun seasonTrailerKey(show: Long, season: Int): String? {
+        val v: VideosDto = http.get("$baseUrl/tv/$show/season/$season/videos") { authorize() }.body()
+        return v.bestTrailerKey()
     }
 
     private suspend fun list(
