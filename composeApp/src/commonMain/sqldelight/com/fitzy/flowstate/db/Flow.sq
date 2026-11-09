@@ -1,0 +1,88 @@
+CREATE TABLE LibraryItem (
+    type TEXT NOT NULL,
+    tmdbId INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    year INTEGER,
+    posterPath TEXT,
+    imdbId TEXT,
+    genres TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL,
+    completion REAL NOT NULL DEFAULT 0.0,
+    abandoned INTEGER NOT NULL DEFAULT 0,
+    addedAt INTEGER NOT NULL,
+    lastActivityAt INTEGER NOT NULL,
+    PRIMARY KEY (type, tmdbId)
+);
+
+CREATE TABLE UserRating (
+    type TEXT NOT NULL,
+    tmdbId INTEGER NOT NULL,
+    score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+    ratedAt INTEGER NOT NULL,
+    PRIMARY KEY (type, tmdbId)
+);
+
+-- One current vote per title; a new vote replaces the old one.
+CREATE TABLE InterestVoteRow (
+    type TEXT NOT NULL,
+    tmdbId INTEGER NOT NULL,
+    vote TEXT NOT NULL,
+    source TEXT NOT NULL,
+    atMillis INTEGER NOT NULL,
+    genres TEXT NOT NULL DEFAULT '',
+    keywords TEXT NOT NULL DEFAULT '',
+    castIds TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (type, tmdbId)
+);
+
+CREATE TABLE ActorPref (
+    personId INTEGER NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    pref TEXT NOT NULL
+);
+
+CREATE TABLE Setting (
+    k TEXT NOT NULL PRIMARY KEY,
+    v TEXT NOT NULL
+);
+
+insertLibraryIfMissing:
+INSERT OR IGNORE INTO LibraryItem(type, tmdbId, name, year, posterPath, imdbId, genres, status, completion, abandoned, addedAt, lastActivityAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateProgress:
+UPDATE LibraryItem SET status = ?, completion = ?, abandoned = ?, lastActivityAt = ? WHERE type = ? AND tmdbId = ?;
+
+selectLibrary:
+SELECT * FROM LibraryItem;
+
+deleteLibraryItem:
+DELETE FROM LibraryItem WHERE type = ? AND tmdbId = ?;
+
+upsertRating:
+INSERT OR REPLACE INTO UserRating(type, tmdbId, score, ratedAt) VALUES (?, ?, ?, ?);
+
+selectRatings:
+SELECT * FROM UserRating;
+
+upsertVote:
+INSERT OR REPLACE INTO InterestVoteRow(type, tmdbId, vote, source, atMillis, genres, keywords, castIds)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+selectVotes:
+SELECT * FROM InterestVoteRow;
+
+upsertActor:
+INSERT OR REPLACE INTO ActorPref(personId, name, pref) VALUES (?, ?, ?);
+
+deleteActor:
+DELETE FROM ActorPref WHERE personId = ?;
+
+selectActors:
+SELECT * FROM ActorPref;
+
+getSetting:
+SELECT v FROM Setting WHERE k = ?;
+
+putSetting:
+INSERT OR REPLACE INTO Setting(k, v) VALUES (?, ?);

@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -25,6 +26,7 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.json)
+            implementation(libs.sqldelight.runtime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -34,11 +36,13 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.tv.material)
+            implementation(libs.sqldelight.android.driver)
         }
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.kotlinx.coroutines.swing)
+                implementation(libs.sqldelight.sqlite.driver)
             }
         }
     }
@@ -59,6 +63,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildTypes { release { isMinifyEnabled = false } }
+}
+
+sqldelight {
+    databases {
+        create("FlowDatabase") {
+            packageName.set("com.fitzy.flowstate.db")
+        }
+    }
 }
 
 compose.desktop {
