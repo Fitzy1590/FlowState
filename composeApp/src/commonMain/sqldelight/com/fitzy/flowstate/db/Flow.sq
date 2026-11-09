@@ -72,6 +72,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 selectVotes:
 SELECT * FROM InterestVoteRow;
 
+deleteVote:
+DELETE FROM InterestVoteRow WHERE type = ? AND tmdbId = ?;
+
 upsertActor:
 INSERT OR REPLACE INTO ActorPref(personId, name, pref) VALUES (?, ?, ?);
 

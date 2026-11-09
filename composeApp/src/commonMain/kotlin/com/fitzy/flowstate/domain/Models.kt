@@ -56,4 +56,8 @@ data class Candidate(
     val cast: List<Long> = emptyList(),
     val voteAverage: Double = 0.0,
     val similarSeeds: Map<TitleId, Int> = emptyMap(),
-)
+    val posterPath: String? = null,
+    val imdbId: String? = null,
+) {
+    fun features() = TitleFeatures(genres, keywords, cast)
+}

@@ -10,6 +10,15 @@ enum class LibraryStatus { PLANNED, WATCHING, COMPLETED, DROPPED }
 
 enum class ActorPref { LIKED, DISLIKED }
 
+data class LibraryEntry(
+    val id: TitleId,
+    val name: String,
+    val year: Int?,
+    val posterPath: String?,
+    val completion: Double,
+    val lastActivityAt: Long,
+)
+
 /** Local source of truth for library, ratings, interest votes, actor lists and prompt state. */
 class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long) {
     private val q get() = db.flowQueries
@@ -30,6 +39,14 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
         require(completion in 0.0..1.0) { "completion must be 0..1" }
         q.updateProgress(status.name, completion, if (abandoned) 1L else 0L, clock(), id.type.name, id.tmdbId)
     }
+
+    /** The most recently active title that is in progress, for the Home hero. */
+    fun continueWatching(): LibraryEntry? = q.selectLibrary().executeAsList()
+        .filter { it.status == LibraryStatus.WATCHING.name }
+        .maxByOrNull { it.lastActivityAt }
+        ?.let {
+            LibraryEntry(TitleId(MediaType.valueOf(it.type), it.tmdbId), it.name, it.year?.toInt(), it.posterPath, it.completion, it.lastActivityAt)
+        }
 
     fun removeFromLibrary(id: TitleId) = q.deleteLibraryItem(id.type.name, id.tmdbId)
 
@@ -59,7 +76,25 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
         )
     }
 
-    fun voteFor(id: TitleId): InterestVote? = votes().firstOrNull { it.vote.titleId == id }?.vote
+    fun voteFor(id: TitleId): InterestVote? = votedTitle(id)?.vote
+
+    fun votedTitle(id: TitleId): VotedTitle? = votes().firstOrNull { it.vote.titleId == id }
+
+    fun deleteVote(id: TitleId) = q.deleteVote(id.type.name, id.tmdbId)
+
+    /** Restores a previous vote exactly, including its original time and source (used by undo). */
+    fun restoreVote(v: VotedTitle) {
+        val id = v.vote.titleId
+        q.upsertVote(
+            id.type.name, id.tmdbId, v.vote.vote.name, v.vote.source.name, v.vote.atMillis,
+            v.features.genres.joinToString(","), v.features.keywords.joinToString(","), v.features.cast.joinToString(","),
+        )
+    }
+
+    /** Quick add for a recommendation candidate. */
+    fun quickAdd(c: Candidate, source: VoteSource = VoteSource.SWIPE) = quickAdd(
+        TmdbTitle(c.id, c.name, c.year, c.posterPath, c.genres, c.voteAverage), c.features(), c.imdbId, source,
+    )
 
     /**
      * Quick add: puts the title in the library as Planned, and counts it as Yes unless the user already voted.

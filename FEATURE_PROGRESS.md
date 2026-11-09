@@ -39,8 +39,8 @@ Posters: TMDB primary, Metahub fallback.
 | 7b | Season trailer (next season after finished) | todo | visibility logic tests |
 | 7c | Season recap (YouTube search) | todo | with key opens top result; without key opens search |
 | 7d | AI episode summaries + season catch-up | todo | no summary for unwatched episodes; cache hit test |
-| 8a | Periodic "interested?" prompt (Yes / Maybe / Never) | S1 done (`InterestPrompter` rules + vote store); card UI todo | frequency + back-off tests; votes change scores |
-| 8b | Discover swipe tab + quick add to library | S1 done (votes, `quickAdd`); swipe UI todo | swipe/keys/D-pad map to votes; undo works; add writes library |
+| 8a | Periodic "interested?" prompt (Yes / Maybe / Never) | S1 done (`InterestPrompter` rules + vote store); card UI first pass on Home (sample data), device check todo | frequency + back-off tests; votes change scores |
+| 8b | Discover swipe tab + quick add to library | S1 done (votes, `quickAdd`); swipe UI first pass (touch drag, keys), device check todo | swipe/keys/D-pad map to votes; undo works; add writes library |
 | 8c | AI search (text, structured query -> TMDB) | todo | parsed-query tests for both example prompts; no invented titles |
 | 8d | Voice input on Android and TV | todo | permission flow; speech text reaches search; device test |
 | 8e | Windows voice (v1 hint, v2 Vosk) | todo | v1: hint shown; v2: offline recognition test |
@@ -54,6 +54,8 @@ Posters: TMDB primary, Metahub fallback.
 - Android SDK is not preinstalled in cloud sessions. Install cmdline-tools from `dl.google.com`, then `platforms;android-35` and `build-tools;35.0.0`, and write `sdk.dir` to `local.properties` (gitignored).
 - Cloud environment `flowstate` allows `dl.google.com` and `maven.google.com`. Maven Central can answer 429 under parallel load: use `--max-workers=1 --no-parallel` and retry.
 - CI uses `android-actions/setup-android`.
-- S1 done so far: domain models, `UserProfile`, `Recommender`, `TmdbClient`, `PosterUrls`, SQLDelight database (library, ratings, votes, actors, settings), `FlowRepository`, `InterestPrompter`. 38 tests pass (`./gradlew check`).
+- S1 done: domain, recommender, TMDB client, SQLDelight database, repository, `InterestPrompter`, `HomePresenter`, `DiscoverPresenter`. 52 tests pass (`./gradlew check`).
+- S2 first pass: Home (hero, interest card, recommended row) and Discover (swipe card) run on `SampleCatalog` (dev data, not TMDB). Desktop Home screen checked in a screenshot under a virtual display. Not yet checked: Discover screen, Android, TV, touch swipe.
+- Known gaps: navigation is one shared bottom bar (spec says native per platform); flows use `collectAsState` (CLAUDE.md asks for lifecycle-aware collection on Android); DB calls run on the main thread; posters are colored placeholders (Coil not wired).
 - TMDB response shapes and the Metahub URL are untested against live services (no TMDB key here, `images.metahub.space` is not in the cloud allowlist). Check both before relying on them.
-- Next: per-platform database driver factory (`expect`/`actual`), app wiring (ViewModels), then Home hero + rows with the interest card (8a), then the Discover tab (8b).
+- Next: TmdbCatalog (needs a TMDB key), poster loading with Coil, per-platform navigation, then ratings modal (2a) and detail page.
