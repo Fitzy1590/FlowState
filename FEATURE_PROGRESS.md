@@ -39,6 +39,11 @@ Posters: TMDB primary, Metahub fallback.
 | 7b | Season trailer (next season after finished) | todo | visibility logic tests |
 | 7c | Season recap (YouTube search) | todo | with key opens top result; without key opens search |
 | 7d | AI episode summaries + season catch-up | todo | no summary for unwatched episodes; cache hit test |
+| 8a | Periodic "interested?" prompt (Yes / Maybe / Never) | todo | frequency + back-off tests; votes change scores |
+| 8b | Discover swipe tab + quick add to library | todo | swipe/keys/D-pad map to votes; undo works; add writes library |
+| 8c | AI search (text, structured query -> TMDB) | todo | parsed-query tests for both example prompts; no invented titles |
+| 8d | Voice input on Android and TV | todo | permission flow; speech text reaches search; device test |
+| 8e | Windows voice (v1 hint, v2 Vosk) | todo | v1: hint shown; v2: offline recognition test |
 
 ## Open items
 - Verify every **[verify]** item in `SPEC.md` before coding it.

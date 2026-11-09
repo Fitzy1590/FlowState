@@ -9,10 +9,11 @@ Score per candidate, all inputs normalized to 0..1:
 
 | Signal | Weight | Definition |
 |---|---|---|
-| Genre affinity | 0.30 | Mean over the title's genres of the user's genre score. Genre score = smoothed mean of `(score/100) * completion` for watched titles, Bayesian prior 0.5 with k=5 |
-| TMDB/Trakt similarity | 0.25 | Rank-decayed vote from titles the user rated >= 70: `1/(1+rank)` summed, capped at 1 |
-| Rating pattern | 0.20 | Closeness of the title's TMDB vote average to the user's mean score for similar genres |
+| Genre affinity | 0.25 | Mean over the title's genres of the user's genre score. Genre score = smoothed mean of `(score/100) * completion` for watched titles, Bayesian prior 0.5 with k=5 |
+| TMDB/Trakt similarity | 0.20 | Rank-decayed vote from titles the user rated >= 70: `1/(1+rank)` summed, capped at 1 |
+| Rating pattern | 0.15 | Closeness of the title's TMDB vote average to the user's mean score for similar genres |
 | Completion rate | 0.15 | Share of started titles in matching genres finished. Titles abandoned under 25% after 30 days count as negative |
+| Explicit votes (8a/8b) | 0.15 | Genre/keyword/cast affinity learned from Yes / Maybe / Never votes, see section 8 |
 | Recency | 0.10 | Newer releases get a small boost, linear over 10 years |
 
 Actor adjustment (soft penalty, per your vote), applied after the weighted sum, over the top 5 billed cast:
@@ -77,3 +78,37 @@ Recap videos are third-party and may contain spoilers for later seasons; label t
 - "Catch me up" per season: concatenates the watched episodes' summaries into a 4-6 sentence season recap.
 - Cache in `EpisodeSummary(showId, season, episode, lang, promptVersion, text, createdAt)`; regenerate only if the prompt version changes. Without a key or offline, show the TMDB overview. Label every summary "AI-generated".
 - Limit: if the source overview is empty, show "No description available" rather than generating one.
+
+## 8. Interest votes, Discover swipe tab, AI search (new)
+
+**Vote model.** `InterestVote(titleId, type, vote, at, source)` with `vote` in `YES | MAYBE | NEVER` and `source` in `PROMPT | SWIPE | SEARCH`. One current vote per title; a new vote replaces the old one.
+- YES: raises affinity of the title's genres, keywords and top-billed cast (+1.0 weight unit each).
+- MAYBE: +0.3 weight units, and the title may be shown again after 30 days.
+- NEVER: title is never recommended again, and its genres/keywords get -0.2 weight units. It never changes the actor lists on its own; the app may suggest "Also dislike {actor}?" and the user confirms.
+- Affinity per feature = smoothed mean of vote weights (same Bayesian prior as genres). The "Explicit votes" signal in section 1 is the mean affinity of the candidate's features.
+
+**8a Interest prompt.** A card on Home ("Would this interest you?" with Yes / Maybe / Never), not a modal.
+- Frequency: at most one per app launch and one per 24 hours; never while a sync or playback is running; skipped if the user dismissed three in a row (back off for 7 days).
+- Candidate choice: 70% top recommender picks not yet voted on, 30% exploration picks where the profile is least certain (genres or cast with few votes). Titles already in the library or voted NEVER are excluded.
+- Card shows poster, year, genres, TMDB overview. Hit targets work with touch, mouse, and D-pad.
+
+**8b Discover tab.** New top-level tab with a card stack.
+- Swipe right = Yes, swipe left = Never, swipe up or "?" button = Maybe. A visible "Add to library" button on every card adds the title to the library as Planned (also counts as Yes if the user has not voted). Undo reverts the last vote.
+- Input per platform: Mobile: touch swipe plus the buttons. Windows: buttons and keys (`Left`=Never, `Right`=Yes, `Up`=Maybe, `A`=add, `Ctrl+Z`=undo). TV: D-pad Left/Right/Up and a focused Add button.
+- Deck source: recommender candidates (section 1), prefetching the next 10 posters; filter chips for Movies / Shows / genre.
+- Every vote feeds section 1 immediately and is stored locally; sync of votes is not in scope.
+
+**8c AI search (text).** Search box on its own tab and on Home. Examples: "show me old popular war movies", "I liked Band of Brothers and Saving Private Ryan, show me similar shows and movies".
+1. One Claude Haiku (`claude-haiku-5-5`) call turns the text into a structured query via a tool schema: `{mediaTypes, genres, yearFrom, yearTo, popularity, moods, keywords, seedTitles[], exclude[]}`. The model never returns titles to show; this prevents invented titles.
+2. Resolve against TMDB:
+   - Filter queries use `/discover/{movie|tv}` with `with_genres`, `primary_release_date` range, `sort_by=vote_count.desc` and `vote_count.gte` for "popular" (e.g. "old" -> release year before 2000, adjustable). Genre ids come from TMDB's genre list (War = 10752 for movies **[verify]**).
+   - Seed queries resolve each seed with `/search`, then union `/recommendations` and `/similar` for each. A title appearing for more than one seed ranks higher. Seeds, watched titles and NEVER titles are removed.
+3. Rank with the section 1 scorer, then show a poster list. The interpreted query is shown as editable chips ("War", "Movies", "before 2000", "similar to Band of Brothers") so the user can correct a misread.
+4. Selecting a result opens the detail page with Play Now, Add to library, and Trailer.
+- Mood queries ("something cozy", "I want to laugh") map to TMDB genres and keywords through the same structured query.
+- Without a Claude key the search falls back to a local parser (genre and year words, plus title search) and says it is limited.
+- Privacy: only the typed or spoken text is sent to Claude, not the library or ratings.
+
+**8d Voice input, Android and Android TV.** `expect fun rememberVoiceInput()`; Android `actual` uses `SpeechRecognizer` (or `RecognizerIntent`) with `RECORD_AUDIO` permission requested on first mic tap; result text goes into the search box and runs 8c. Show a listening state and a retry. On TV the remote microphone works where the device's speech service supports it **[verify on a real TV]**; text entry stays available.
+
+**8e Voice input, Windows.** The JVM has no simple built-in speech API. Options: (a) v1: text box and a hint to use Windows dictation (`Win+H`); (b) v2: offline recognition with Vosk (about 50 MB model download, no cloud); (c) cloud speech-to-text, which needs another key. Recommend (a) now, (b) later. Claude's API does not take audio, so it cannot do this step.

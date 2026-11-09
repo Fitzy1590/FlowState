@@ -25,3 +25,7 @@ paths: ["composeApp/src/**/*.kt"]
 
 ## Navigation per platform
 - Mobile: bottom bar. Windows: left rail. TV: top tabs with side rail. See platform rule files.
+
+## Top-level destinations
+Home, Discover (swipe cards), Search (AI, text + mic), Library, Settings. Discover cards always show a
+visible Add to library button. The interest prompt on Home is a card, never a blocking dialog.
