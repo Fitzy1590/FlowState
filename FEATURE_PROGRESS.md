@@ -22,12 +22,12 @@ Posters: TMDB primary, Metahub fallback.
 | 3b | Nuvio deep link (`nuvio://meta?...`) | S1+S2 done (matches Nuvio source; "Open in Nuvio" button); device launch todo | URI builder tests; manual launch |
 | 3c | Default player + next unwatched + no-app prompt | S1+S2 done: default player in Settings, "Play S2E3" for shows (Stremio only; Nuvio opens the title), not-installed message | next-episode logic tests |
 | 4a | Stremio sync | S1+S2 done (movies two-way, shows pull-only; login, Sync now, sync at launch); never run against a real Stremio account | conflict-resolution tests; sandbox account run |
-| 4b | Nuvio sync | BLOCKED: Nuvio uses a private Supabase backend (see SPEC 4). Proposed: Trakt bridge | same as 4a |
+| 4b | Nuvio sync | built for SELF-HOSTED Nuvio servers (discovery, login, profiles, watched union incl. episodes, movie progress), 17 tests against a fake server; official hosted Nuvio is not supported (its connection details are unpublished); never run against a real server | same as 4a |
 | 4c | Background workers (WorkManager, desktop scheduler) | built: Android WorkManager about hourly with network; Windows hourly while open; never run on a device | worker runs on emulator; scheduler test |
 | 4e | Conflict log + force pull/push | built: log (last 5 in Settings) and Force pull / Force push with a confirmation; never run against a real account | log rows match test conflicts |
 | 4g | Export/import backup | built: JSON file via system picker (Android) / file dialog (Windows), validated, all-or-nothing, no secrets; picker never used on a device | round-trip test |
 | 4h | Encrypted credential storage | S1 done (store, Android Keystore AES-GCM, Windows DPAPI, Settings screen); on-device and on-Windows check todo | secrets never in plain prefs/logs |
-| 5a | Launch update check | S1+S2 done (6h throttle, skip version, dialog); needs a published release to test end to end | version-compare tests; skipped version persists |
+| 5a | Launch update check | S1+S2 done: automatic install at launch (default on, switch in Settings), 6h throttle, skip version, dialog when auto is off; needs a published release to test end to end | version-compare tests; skipped version persists |
 | 5b | Settings "Check for Updates" + progress | S1+S2 done | progress UI test |
 | 5c | Installer wrappers (.apk / .msi) | Android + Windows code written (download, SHA-256 check, system installer); never run on a device | checksum verify test; manual install |
 | 6a | Android Mobile UI | todo | `assembleDebug`, emulator walkthrough |
@@ -61,6 +61,9 @@ Home, Discover, Search, Library, Settings (shared bottom bar). Library lists eve
 
 ## Database safety
 Desktop now opens the database through the versioned driver (creates, migrates, handles an empty file); Android already uses the schema version. Before this, an old database file crashed startup ("no such table"). The current schema is the version-1 baseline: from the first release on, schema changes need `.sqm` migrations (rule added to CLAUDE.md).
+
+## In progress and Stremio (this round)
+Home now shows "Continue watching" (everything partway through, newest first, with a progress bar) and "Watched recently"; Library has All / In progress / Planned / Watched filters. Stremio and Nuvio syncs now report titles they could not match to TMDB (before, they were skipped silently, which left the library empty when no TMDB token was saved).
 
 ## Open items
 - Verify every **[verify]** item in `SPEC.md` before coding it.

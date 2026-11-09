@@ -18,6 +18,8 @@ data class UpdateState(
     /** 0..1 while downloading, otherwise null. */
     val progress: Float? = null,
     val message: String? = null,
+    /** Install new versions found at launch without asking. */
+    val auto: Boolean = true,
 )
 
 /** SPEC 5: silent check at launch (at most every 6 hours, honouring a skipped version) and a manual check in Settings. */
@@ -28,8 +30,10 @@ class UpdatePresenter(
     private val scope: CoroutineScope,
     private val clock: () -> Long,
     currentVersion: String,
+    /** Called once the installer has been started; Windows uses it to close the app so the installer can replace it. */
+    private val onInstallStarted: () -> Unit = {},
 ) {
-    private val _state = MutableStateFlow(UpdateState(currentVersion))
+    private val _state = MutableStateFlow(UpdateState(currentVersion, auto = repo.getSetting(AUTO) != "false"))
     val state: StateFlow<UpdateState> = _state.asStateFlow()
 
     fun checkOnLaunch() {
@@ -39,6 +43,12 @@ class UpdatePresenter(
     }
 
     fun checkNow() = run(manual = true)
+
+    /** Turns "install updates automatically" on or off. It is on by default. */
+    fun setAuto(on: Boolean) {
+        repo.putSetting(AUTO, on.toString())
+        _state.update { it.copy(auto = on) }
+    }
 
     /** Hides the dialog for now; the update stays available in Settings. */
     fun later() = _state.update { it.copy(prompt = false) }
@@ -59,7 +69,7 @@ class UpdatePresenter(
                 return@launch
             }
             val msg = when (installer.install(path)) {
-                InstallResult.STARTED -> null
+                InstallResult.STARTED -> { onInstallStarted(); null }
                 InstallResult.NEEDS_PERMISSION -> "Allow FlowState to install apps in the settings screen that just opened, then tap Update again."
                 InstallResult.FAILED -> "The installer could not be started."
             }
@@ -72,6 +82,7 @@ class UpdatePresenter(
     private fun run(manual: Boolean) {
         if (_state.value.checking) return
         _state.update { it.copy(checking = true, message = null) }
+        autoInstall = false
         scope.launch {
             val result = checker.check()
             if (result !is CheckResult.Failed) repo.putSetting(LAST_CHECK, clock().toString())
@@ -79,10 +90,12 @@ class UpdatePresenter(
                 when (result) {
                     is CheckResult.Available -> {
                         val skipped = repo.getSetting(SKIPPED) == result.info.version
+                        // At launch with auto-update on, there is no question to answer: it just updates.
+                        autoInstall = !manual && s.auto && !skipped
                         s.copy(
                             checking = false, available = result.info,
-                            prompt = manual || !skipped, // a skipped version only shows again on a manual check
-                            message = if (manual) null else s.message,
+                            prompt = if (autoInstall) false else manual || !skipped, // a skipped version only shows again on a manual check
+                            message = if (autoInstall) "Updating to ${result.info.version}." else if (manual) null else s.message,
                         )
                     }
                     CheckResult.UpToDate -> s.copy(checking = false, available = null, prompt = false,
@@ -90,10 +103,14 @@ class UpdatePresenter(
                     CheckResult.Failed -> s.copy(checking = false, message = if (manual) "Could not check for updates. Try again later." else null)
                 }
             }
+            if (autoInstall) install()
         }
     }
 
+    private var autoInstall = false
+
     private companion object {
+        const val AUTO = "update.auto"
         const val LAST_CHECK = "update.lastCheckAt"
         const val SKIPPED = "update.skippedVersion"
         const val THROTTLE_MS = 6L * 60 * 60 * 1000

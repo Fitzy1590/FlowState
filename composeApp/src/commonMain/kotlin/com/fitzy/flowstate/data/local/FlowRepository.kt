@@ -106,6 +106,22 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
             )
         }
 
+    fun setImdbId(id: TitleId, imdbId: String) = q.updateImdbId(imdbId, id.type.name, id.tmdbId)
+
+    /** Watched episodes of a show with the time each was marked, as (season, episode, epochMillis). */
+    fun watchedEpisodeTimes(show: TitleId): List<Triple<Int, Int, Long>> =
+        q.selectAllWatchedEpisodes().executeAsList().filter { it.tmdbId == show.tmdbId }.map { Triple(it.season.toInt(), it.episode.toInt(), it.watchedAt) }
+
+    /** Sets one episode's watched time (used when pulling from another service). */
+    fun markEpisodeWatchedAt(show: TitleId, season: Int, episode: Int, at: Long) =
+        q.markEpisodeWatched(show.tmdbId, season.toLong(), episode.toLong(), at)
+
+    /** Titles being watched, most recent activity first. */
+    fun inProgress(limit: Int = 20): List<LibraryItemView> = libraryItems().filter { it.status == LibraryStatus.WATCHING }.take(limit)
+
+    /** Finished titles, most recent first. */
+    fun recentlyWatched(limit: Int = 12): List<LibraryItemView> = libraryItems().filter { it.status == LibraryStatus.COMPLETED }.take(limit)
+
     fun libraryStatus(id: TitleId): String? =
         q.selectLibrary().executeAsList().firstOrNull { it.type == id.type.name && it.tmdbId == id.tmdbId }?.status
 

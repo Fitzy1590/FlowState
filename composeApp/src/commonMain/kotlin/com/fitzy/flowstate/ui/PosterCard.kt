@@ -4,7 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,13 +22,14 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.fitzy.flowstate.data.tmdb.PosterUrls
 import com.fitzy.flowstate.domain.Candidate
+import com.fitzy.flowstate.theme.FlowColors
 
 /**
  * Poster with a colored placeholder behind it. Tries TMDB first, then Metahub; if every source fails
  * (or the title has no poster data) the placeholder with the title stays.
  */
 @Composable
-fun PosterCard(c: Candidate, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+fun PosterCard(c: Candidate, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, progress: Float? = null) {
     val hue = (c.id.tmdbId % 360).toInt()
     val urls = remember(c.posterPath, c.imdbId) { PosterUrls.candidates(c.posterPath, c.imdbId) }
     var attempt by remember(urls) { mutableIntStateOf(0) }
@@ -57,6 +60,12 @@ fun PosterCard(c: Candidate, modifier: Modifier = Modifier, onClick: (() -> Unit
                     onSuccess = { loaded = true },
                     onError = { attempt++ },
                 )
+            }
+        }
+        if (progress != null) {
+            // Thin bar along the bottom edge: how far through the title the user is.
+            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(5.dp).background(Color(0x99000000))) {
+                Box(Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).fillMaxHeight().background(FlowColors.Accent))
             }
         }
     }

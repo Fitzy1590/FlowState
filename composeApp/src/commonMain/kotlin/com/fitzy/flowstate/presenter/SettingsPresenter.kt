@@ -28,6 +28,7 @@ class SettingsPresenter(
     private val getNotifications: () -> Boolean = { false },
     private val setNotifications: (Boolean) -> Unit = {},
     private val requestNotificationPermission: ((Boolean) -> Unit) -> Unit = { it(true) },
+    private val openLink: (String) -> Boolean = { true },
     private val onChanged: () -> Unit,
 ) {
     private val _state = MutableStateFlow(read())
@@ -55,6 +56,11 @@ class SettingsPresenter(
             if (granted) { setNotifications(true); _state.value = read() }
             else { setNotifications(false); _state.value = read().copy(message = "Notifications are blocked. Allow them for FlowState in system settings.") }
         }
+    }
+
+    /** Opens a setup page in the browser. */
+    fun openLink(url: String) {
+        if (!openLink.invoke(url)) _state.value = _state.value.copy(message = "Could not open the browser. Address: $url")
     }
 
     fun dismissMessage() { _state.value = _state.value.copy(message = null) }

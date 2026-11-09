@@ -26,6 +26,11 @@ import com.fitzy.flowstate.presenter.UpdatePresenter
 import com.fitzy.flowstate.update.UpdateChecker
 import com.fitzy.flowstate.update.UpdateInstaller
 import com.fitzy.flowstate.sync.StremioApi
+import com.fitzy.flowstate.sync.TitleResolver
+import com.fitzy.flowstate.sync.nuvio.NuvioAccountStore
+import com.fitzy.flowstate.sync.nuvio.NuvioApi
+import com.fitzy.flowstate.sync.nuvio.NuvioSync
+import com.fitzy.flowstate.presenter.NuvioPresenter
 import com.fitzy.flowstate.sync.StremioSync
 import com.fitzy.flowstate.secrets.SecretNames
 import com.fitzy.flowstate.links.LinkLauncher
@@ -52,6 +57,7 @@ class AppContainer(
     currentVersion: String,
     updateInstaller: UpdateInstaller,
     val hooks: ActivityHooks = ActivityHooks(),
+    onInstallStarted: () -> Unit = {},
 ) {
     val repository = FlowRepository(FlowDatabase(driver), clock)
     private val catalog: Catalog = SecretAwareCatalog(secrets, http, seeds = { repository.profile().likedSeeds }, clock = clock)
@@ -62,19 +68,38 @@ class AppContainer(
     private val summarizer: Summarizer = ClaudeSummarizer(claude)
     private val youtube = YoutubeClient(http, apiKey = { secrets.get(SecretNames.YOUTUBE) })
 
+    private val tmdbResolver = TitleResolver { imdb ->
+        secrets.get(SecretNames.TMDB)?.let { t -> runCatching { TmdbClient(http, apiKey = { t }).findByImdb(imdb) }.getOrNull() }
+    }
+
     private val stremioSync = StremioSync(
         StremioApi(http), repository,
-        resolver = { imdb -> secrets.get(SecretNames.TMDB)?.let { t -> runCatching { TmdbClient(http, apiKey = { t }).findByImdb(imdb) }.getOrNull() } },
+        resolver = tmdbResolver,
         authKey = { secrets.get(SecretNames.STREMIO_AUTH) },
         clock = clock,
     )
+
+    private val nuvioStore = NuvioAccountStore(secrets)
+    private val nuvioApi = NuvioApi(http, nuvioStore, clientId = ::nuvioClientId, clock = clock)
+    private val nuvioSync = NuvioSync(nuvioApi, nuvioStore, repository, catalog, tmdbResolver, clock)
+    val nuvio = NuvioPresenter(http, nuvioApi, nuvioStore, nuvioSync, repository, scope) {
+        home.load()
+        discover.load()
+    }
+
+    /** Random id that tells the server which app made a change. Made once and kept. */
+    private fun nuvioClientId(): String = repository.getSetting("nuvio.clientId") ?: run {
+        val chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+        ("flowstate-" + (1..32).map { chars[kotlin.random.Random.nextInt(chars.length)] }.joinToString("")).also { repository.putSetting("nuvio.clientId", it) }
+    }
+
     val sync = SyncPresenter(secrets, StremioApi(http), stremioSync, repository, scope) {
         home.load()
         discover.load()
     }
 
     val updates = UpdatePresenter(
-        UpdateChecker(http, currentVersion, updateInstaller.assetSuffix), updateInstaller, repository, scope, clock, currentVersion,
+        UpdateChecker(http, currentVersion, updateInstaller.assetSuffix), updateInstaller, repository, scope, clock, currentVersion, onInstallStarted,
     )
 
     private val omdb = OmdbClient(http, apiKey = { secrets.get(SecretNames.OMDB) })
@@ -87,7 +112,7 @@ class AppContainer(
 
     private val upcomingService = UpcomingService(repository, catalog)
     val library = LibraryPresenter(repository, upcomingService, scope)
-    val background = BackgroundWork(repository, stremioSync, upcomingService, clock)
+    val background = BackgroundWork(repository, stremioSync, upcomingService, clock, nuvioSync)
 
     fun episodesFor(c: Candidate) = EpisodesPresenter(c, repository, catalog, summarizer, youtube, launcher, scope)
 
@@ -102,6 +127,7 @@ class AppContainer(
         getNotifications = { repository.getSetting(NOTIFICATIONS_KEY) == "true" },
         setNotifications = { repository.putSetting(NOTIFICATIONS_KEY, it.toString()) },
         requestNotificationPermission = { reply -> hooks.requestNotificationPermission(reply) },
+        openLink = { launcher.open(it) },
     ) {
         home.load()
         discover.load()

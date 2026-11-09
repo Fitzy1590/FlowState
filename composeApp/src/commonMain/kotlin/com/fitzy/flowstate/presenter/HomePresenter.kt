@@ -3,6 +3,7 @@ package com.fitzy.flowstate.presenter
 import com.fitzy.flowstate.data.Catalog
 import com.fitzy.flowstate.data.local.FlowRepository
 import com.fitzy.flowstate.data.local.LibraryEntry
+import com.fitzy.flowstate.data.local.LibraryItemView
 import com.fitzy.flowstate.domain.*
 import com.fitzy.flowstate.reco.InterestPrompter
 import com.fitzy.flowstate.reco.PromptState
@@ -17,6 +18,9 @@ data class HomeState(
     val hero: LibraryEntry? = null,
     val recommended: List<Candidate> = emptyList(),
     val prompt: Candidate? = null,
+    /** Everything the user is partway through, most recent first. */
+    val inProgress: List<LibraryItemView> = emptyList(),
+    val recentlyWatched: List<LibraryItemView> = emptyList(),
     val loading: Boolean = true,
 )
 
@@ -51,7 +55,7 @@ class HomePresenter(
                     repo.savePromptState(promptState)
                 }
             }
-            _state.value = HomeState(repo.continueWatching(), recs.take(ROW_SIZE), prompt, loading = false)
+            _state.value = HomeState(repo.continueWatching(), recs.take(ROW_SIZE), prompt, repo.inProgress(), repo.recentlyWatched(), loading = false)
         }
     }
 

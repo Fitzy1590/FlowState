@@ -47,6 +47,7 @@ class DesktopUpdateInstaller(private val http: HttpClient, private val tempDir: 
 
     override fun install(path: String): InstallResult {
         if (!System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) return InstallResult.FAILED
-        return runCatching { ProcessBuilder("msiexec", "/i", path).start(); InstallResult.STARTED }.getOrDefault(InstallResult.FAILED)
+        // /passive shows a progress bar and asks nothing; Windows still asks for administrator permission.
+        return runCatching { ProcessBuilder("msiexec", "/i", path, "/passive", "/norestart").start(); InstallResult.STARTED }.getOrDefault(InstallResult.FAILED)
     }
 }

@@ -82,7 +82,10 @@ class SyncPresenter(
     private suspend fun runSync(quiet: Boolean = false, prefer: Prefer? = null) {
         val result = sync.sync(prefer)
         val msg = when (result) {
-            is SyncResult.Done -> if (quiet && result.pushed + result.pulled == 0) null else "Synced: ${result.pulled} updated here, ${result.pushed} sent to Stremio."
+            is SyncResult.Done -> if (quiet && result.pushed + result.pulled + result.skipped == 0) null else buildString {
+                append("Synced: ${result.pulled} updated here, ${result.pushed} sent to Stremio.")
+                if (result.skipped > 0) append(" ${result.skipped} title(s) could not be matched to TMDB and were skipped. Save a TMDB token in Settings, then sync again.")
+            }
             SyncResult.NotConnected -> "Not connected to Stremio."
             SyncResult.Failed -> if (quiet) null else "Sync failed. Nothing was changed. Try again later."
         }

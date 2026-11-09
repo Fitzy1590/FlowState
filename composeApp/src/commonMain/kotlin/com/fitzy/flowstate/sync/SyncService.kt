@@ -10,7 +10,8 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 sealed interface SyncResult {
-    data class Done(val pushed: Int, val pulled: Int) : SyncResult
+    /** [skipped]: titles that could not be identified (no TMDB token, or TMDB did not know them), so they were left out. */
+    data class Done(val pushed: Int, val pulled: Int, val skipped: Int = 0) : SyncResult
     data object NotConnected : SyncResult
     data object Failed : SyncResult
 }
@@ -46,6 +47,7 @@ class StremioSync(
         val now = clock()
         val pushes = ArrayList<JsonObject>()
         var pulled = 0
+        var skipped = 0
         for (d in SyncEngine.plan(local, remote, prefer = prefer)) {
             when (d.action) {
                 SyncAction.PUSH -> {
@@ -56,11 +58,14 @@ class StremioSync(
                 SyncAction.PULL -> if (applyPull(d.item, localByImdb[d.item.imdbId]?.id)) {
                     pulled++
                     repo.logSync("stremio", d.item.name, if (prefer != null) "forced pull" else "pulled", d.localTs, d.remoteTs)
+                } else {
+                    skipped++
+                    repo.logSync("stremio", d.item.name, "skipped (not matched to TMDB)", d.localTs, d.remoteTs)
                 }
             }
         }
         if (pushes.isNotEmpty() && !api.putLibrary(key, pushes)) return SyncResult.Failed
-        return SyncResult.Done(pushes.size, pulled)
+        return SyncResult.Done(pushes.size, pulled, skipped)
     }
 
     private suspend fun applyPull(item: SyncItem, existing: com.fitzy.flowstate.domain.TitleId?): Boolean {

@@ -36,12 +36,15 @@ class UpdatePresenterTest {
         )
     }).withTmdbJson()
 
+    private var installStarted = 0
+
     private fun presenter(current: String = "0.1.0", inst: UpdateInstaller = installer) =
-        UpdatePresenter(UpdateChecker(http, current, ".apk"), inst, repo, CoroutineScope(Dispatchers.Unconfined), clock, current)
+        UpdatePresenter(UpdateChecker(http, current, ".apk"), inst, repo, CoroutineScope(Dispatchers.Unconfined), clock, current) { installStarted++ }
 
     private fun await(cond: () -> Boolean) = runBlocking { withTimeout(5_000) { while (!cond()) delay(10) } }
 
     @Test fun launchCheckFindsNewVersionAndPrompts() {
+        repo.putSetting("update.auto", "false")
         val p = presenter(); p.checkOnLaunch()
         await { !p.state.value.checking }
         assertEquals("0.2.0", p.state.value.available?.version)
@@ -59,6 +62,7 @@ class UpdatePresenterTest {
     }
 
     @Test fun skippedVersionStaysQuietAtLaunchButShowsOnManualCheck() {
+        repo.putSetting("update.auto", "false")
         val p = presenter(); p.checkOnLaunch(); await { !p.state.value.checking }
         p.skipVersion()
         assertFalse(p.state.value.prompt)
@@ -71,6 +75,7 @@ class UpdatePresenterTest {
     }
 
     @Test fun skippingThenANewerVersionPromptsAgain() {
+        repo.putSetting("update.auto", "false")
         val p = presenter(); p.checkOnLaunch(); await { !p.state.value.checking }
         p.skipVersion()
         latestTag = "v0.3.0"; clock.now += 7L * 60 * 60 * 1000
@@ -115,5 +120,62 @@ class UpdatePresenterTest {
         val p = presenter(inst = inst); p.checkNow(); await { p.state.value.available != null }
         p.install(); await { p.state.value.progress == null }
         assertTrue("Allow" in p.state.value.message!!)
+    }
+
+    // ---- automatic updates ----
+
+    @Test fun autoUpdateIsOnByDefault() = assertTrue(presenter().state.value.auto)
+
+    @Test fun withAutoOnALaunchCheckInstallsWithoutAnyPrompt() {
+        val p = presenter(); p.checkOnLaunch()
+        await { installer.installed != null }
+        assertEquals("/tmp/x.apk", installer.installed)
+        assertFalse(p.state.value.prompt) // nothing was asked
+        assertEquals(1, installStarted)
+    }
+
+    @Test fun withAutoOffALaunchCheckOnlyPrompts() {
+        val p = presenter(); p.setAuto(false); p.checkOnLaunch()
+        await { !p.state.value.checking }
+        assertTrue(p.state.value.prompt)
+        assertNull(installer.installed)
+        assertEquals(0, installStarted)
+    }
+
+    @Test fun theChoiceIsRemembered() {
+        presenter().setAuto(false)
+        assertFalse(presenter().state.value.auto)
+        presenter().setAuto(true)
+        assertTrue(presenter().state.value.auto)
+    }
+
+    @Test fun aSkippedVersionIsNotInstalledAutomatically() {
+        val first = presenter(); first.setAuto(false); first.checkOnLaunch(); await { !first.state.value.checking }
+        first.skipVersion()
+        clock.now += 7L * 60 * 60 * 1000
+        val p = presenter(); p.setAuto(true); p.checkOnLaunch(); await { !p.state.value.checking }
+        assertNull(installer.installed)
+        assertFalse(p.state.value.prompt)
+    }
+
+    @Test fun aManualCheckStillAsksEvenWithAutoOn() {
+        val p = presenter(); p.checkNow()
+        await { !p.state.value.checking && p.state.value.available != null }
+        assertTrue(p.state.value.prompt)
+        assertNull(installer.installed)
+    }
+
+    @Test fun autoInstallThatFailsSaysSoAndDoesNotLoop() {
+        val bad = FakeInstaller(path = null)
+        val p = presenter(inst = bad); p.checkOnLaunch()
+        await { !p.state.value.checking && p.state.value.progress == null && p.state.value.message?.contains("checksum") == true }
+        assertNull(bad.installed)
+        assertEquals(0, installStarted)
+    }
+
+    @Test fun upToDateWithAutoOnDoesNothing() {
+        latestTag = "v0.1.0"
+        val p = presenter(); p.checkOnLaunch(); await { !p.state.value.checking }
+        assertNull(installer.installed); assertNull(p.state.value.available)
     }
 }

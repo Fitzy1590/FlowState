@@ -19,6 +19,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import okio.Path.Companion.toOkioPath
 import java.io.File
+import kotlin.system.exitProcess
 
 private const val BACKGROUND_INTERVAL_MS = 60L * 60 * 1000
 private const val POSTER_CACHE_BYTES = 200L * 1024 * 1024
@@ -44,6 +45,7 @@ fun main() = application {
         launcher = DesktopLinkLauncher(), scope = scope,
         currentVersion = System.getProperty("flowstate.version") ?: "0.1.0",
         updateInstaller = DesktopUpdateInstaller(http, File(dataDir(), "updates")),
+        onInstallStarted = { exitProcess(0) }, // the installer cannot replace files that are in use
     )
     container.hooks.files = DesktopFileTransfer()
     // About hourly while the app is open: sync with Stremio. (Notifications are Android only for now.)

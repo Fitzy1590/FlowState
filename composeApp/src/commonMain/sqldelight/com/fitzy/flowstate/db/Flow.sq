@@ -163,3 +163,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAllWatchedEpisodes:
 SELECT * FROM EpisodeWatch;
+
+updateImdbId:
+UPDATE LibraryItem SET imdbId = ? WHERE type = ? AND tmdbId = ?;

@@ -79,8 +79,9 @@ class StremioSyncTest {
 
     @Test fun unresolvableRemoteItemIsSkippedNotFailed() = runTest {
         remote += remoteMovie("tt9999999", 1, 10, 1_700_000_000_000)
-        assertEquals(SyncResult.Done(0, 0), sync().sync())
+        assertEquals(SyncResult.Done(0, 0, skipped = 1), sync().sync()) // reported, not hidden
         assertTrue(repo.libraryIds().isEmpty())
+        assertEquals("skipped (not matched to TMDB)", repo.recentSyncEvents().first().action)
     }
 
     @Test fun newerLocalMovieIsPushedKeepingRemoteFields() = runTest {

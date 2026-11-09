@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.unit.dp
 import com.fitzy.flowstate.data.local.LibraryEntry
+import com.fitzy.flowstate.data.local.LibraryItemView
 import com.fitzy.flowstate.domain.Candidate
 import com.fitzy.flowstate.domain.Vote
 import com.fitzy.flowstate.presenter.HomePresenter
@@ -33,11 +34,31 @@ fun HomeScreen(state: HomeState, onAnswer: (Vote) -> Unit, onDismiss: () -> Unit
     ) {
         item { Hero(state.hero) }
         state.prompt?.let { item { InterestCard(it, onAnswer, onDismiss, onOpen) } }
+        if (state.inProgress.isNotEmpty()) {
+            item { Text("Continue watching", style = MaterialTheme.typography.titleLarge) }
+            item { TitleRow(state.inProgress, onOpen, showProgress = true) }
+        }
+        if (state.recentlyWatched.isNotEmpty()) {
+            item { Text("Watched recently", style = MaterialTheme.typography.titleLarge) }
+            item { TitleRow(state.recentlyWatched, onOpen, showProgress = false) }
+        }
         item { Text("Recommended for you", style = MaterialTheme.typography.titleLarge) }
         item {
             // focusRestorer: coming back to this row returns to the poster that was focused (D-pad).
             LazyRow(Modifier.focusRestorer(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(state.recommended, key = { "${it.id.type}-${it.id.tmdbId}" }) { c -> PosterCard(c, Modifier.width(140.dp), onClick = { onOpen(c) }) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TitleRow(items: List<LibraryItemView>, onOpen: (Candidate) -> Unit, showProgress: Boolean) {
+    LazyRow(Modifier.focusRestorer(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(items, key = { "${it.candidate.id.type}-${it.candidate.id.tmdbId}" }) { v ->
+            Column(Modifier.width(140.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                PosterCard(v.candidate, Modifier.fillMaxWidth(), onClick = { onOpen(v.candidate) }, progress = if (showProgress) v.completion.toFloat() else null)
+                Text(v.candidate.name, style = MaterialTheme.typography.bodySmall, maxLines = 1)
             }
         }
     }

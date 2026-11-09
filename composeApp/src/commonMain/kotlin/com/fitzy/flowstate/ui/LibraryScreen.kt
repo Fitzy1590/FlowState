@@ -3,10 +3,14 @@ package com.fitzy.flowstate.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -26,8 +30,20 @@ fun LibraryRoute(p: LibraryPresenter, onOpen: (Candidate) -> Unit) {
     LibraryScreen(items, upcoming, onOpen)
 }
 
+private enum class LibraryFilter(val label: String) {
+    All("All"), InProgress("In progress"), Planned("Planned"), Watched("Watched");
+
+    fun matches(s: LibraryStatus) = when (this) {
+        All -> true
+        InProgress -> s == LibraryStatus.WATCHING
+        Planned -> s == LibraryStatus.PLANNED
+        Watched -> s == LibraryStatus.COMPLETED
+    }
+}
+
 @Composable
 fun LibraryScreen(items: List<LibraryItemView>, upcoming: List<UpcomingItem>, onOpen: (Candidate) -> Unit) {
+    var filter by remember { mutableStateOf(LibraryFilter.All) }
     if (items.isEmpty()) {
         Column(Modifier.fillMaxSize().padding(16.dp)) {
             Text("Your library is empty", style = MaterialTheme.typography.titleLarge)
@@ -49,7 +65,16 @@ fun LibraryScreen(items: List<LibraryItemView>, upcoming: List<UpcomingItem>, on
             }
             item { Text("Your library", style = MaterialTheme.typography.titleLarge) }
         }
-        items(items, key = { "${it.candidate.id.type}-${it.candidate.id.tmdbId}" }) { v ->
+        item {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(LibraryFilter.entries) { f ->
+                    FilterChip(selected = filter == f, onClick = { filter = f }, label = {
+                        Text("${f.label} (${items.count { f.matches(it.status) }})")
+                    })
+                }
+            }
+        }
+        items(items.filter { filter.matches(it.status) }, key = { "${it.candidate.id.type}-${it.candidate.id.tmdbId}" }) { v ->
             Row(Modifier.fillMaxWidth().focusHighlight().clickable { onOpen(v.candidate) }, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 PosterCard(v.candidate, Modifier.width(64.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {

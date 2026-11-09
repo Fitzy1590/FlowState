@@ -16,19 +16,24 @@ import com.fitzy.flowstate.presenter.UpdatePresenter
 import com.fitzy.flowstate.presenter.UpdateState
 import com.fitzy.flowstate.presenter.BackupPresenter
 import com.fitzy.flowstate.presenter.BackupState
+import com.fitzy.flowstate.presenter.NuvioPresenter
+import com.fitzy.flowstate.presenter.NuvioStage
+import com.fitzy.flowstate.presenter.NuvioState
 import com.fitzy.flowstate.presenter.Player
+import com.fitzy.flowstate.sync.nuvio.NuvioProfile
 import com.fitzy.flowstate.presenter.SettingsState
 import com.fitzy.flowstate.presenter.SyncState
 import com.fitzy.flowstate.secrets.SecretNames
 
 @Composable
-fun SettingsRoute(presenter: SettingsPresenter, sync: SyncPresenter, updates: UpdatePresenter, backup: BackupPresenter) {
+fun SettingsRoute(presenter: SettingsPresenter, sync: SyncPresenter, updates: UpdatePresenter, backup: BackupPresenter, nuvio: NuvioPresenter) {
+    val nuvioState by nuvio.state.collectAsState()
     LaunchedEffect(Unit) { backup.refresh() }
     val backupState by backup.state.collectAsState()
     val state by presenter.state.collectAsState()
     val syncState by sync.state.collectAsState()
     val updateState by updates.state.collectAsState()
-    SettingsScreen(state, presenter::save, presenter::clear, presenter::setDefaultPlayer, presenter::removeActor, presenter::setNotificationsEnabled, presenter::dismissMessage, syncState, sync::login, sync::syncNow, sync::logout, updateState, updates::checkNow, updates::install, updates::dismissMessage, backupState, backup::export, backup::import, sync::forcePull, sync::forcePush)
+    SettingsScreen(state, presenter::save, presenter::clear, presenter::setDefaultPlayer, presenter::removeActor, presenter::setNotificationsEnabled, presenter::dismissMessage, presenter::openLink, syncState, sync::login, sync::syncNow, sync::logout, updateState, updates::checkNow, updates::install, updates::dismissMessage, updates::setAuto, backupState, backup::export, backup::import, sync::forcePull, sync::forcePush, nuvioState, nuvio::findServer, nuvio::signIn, nuvio::chooseProfile, nuvio::syncNow, nuvio::logout)
 }
 
 @Composable
@@ -40,6 +45,7 @@ fun SettingsScreen(
     onRemoveActor: (Long) -> Unit = {},
     onNotifications: (Boolean) -> Unit = {},
     onDismissSettingsMessage: () -> Unit = {},
+    onOpenLink: (String) -> Unit = {},
     sync: SyncState = SyncState(),
     onLogin: (String, String) -> Unit = { _, _ -> },
     onSync: () -> Unit = {},
@@ -48,11 +54,18 @@ fun SettingsScreen(
     onCheckUpdate: () -> Unit = {},
     onInstall: () -> Unit = {},
     onDismissUpdateMessage: () -> Unit = {},
+    onAutoUpdate: (Boolean) -> Unit = {},
     backup: BackupState = BackupState(),
     onExport: () -> Unit = {},
     onImport: () -> Unit = {},
     onForcePull: () -> Unit = {},
     onForcePush: () -> Unit = {},
+    nuvioState: NuvioState = NuvioState(),
+    onNuvioFind: (String) -> Unit = {},
+    onNuvioSignIn: (String, String) -> Unit = { _, _ -> },
+    onNuvioProfile: (NuvioProfile) -> Unit = {},
+    onNuvioSync: () -> Unit = {},
+    onNuvioLogout: () -> Unit = {},
 ) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -60,9 +73,9 @@ fun SettingsScreen(
     ) {
         Text("API keys", style = MaterialTheme.typography.headlineSmall)
         Text("Keys are encrypted on this device and never shown again after saving.")
-        KeyField("TMDB read access token", "Needed for real posters and recommendations. Use the long v4 token.", SecretNames.TMDB, state.tmdbSet, onSave, onClear)
-        KeyField("Claude API key", "Needed for AI search and episode summaries.", SecretNames.CLAUDE, state.claudeSet, onSave, onClear)
-        KeyField("YouTube Data API key", "Optional. Lets season recaps open the top result.", SecretNames.YOUTUBE, state.youtubeSet, onSave, onClear)
+        KeyField("TMDB read access token", "Needed for real posters and recommendations. On the TMDB page, copy the long \"API Read Access Token\", not the short API key.", SecretNames.TMDB, state.tmdbSet, onSave, onClear, HelpLinks.TMDB_KEY, onOpenLink)
+        KeyField("Claude API key", "Needed for AI search and episode summaries. Usage is billed to your Anthropic account.", SecretNames.CLAUDE, state.claudeSet, onSave, onClear, HelpLinks.CLAUDE_KEY, onOpenLink)
+        KeyField("YouTube Data API key", "Optional. Lets season recaps open the top result. Enable the YouTube Data API v3 for your Google project, then create a key.", SecretNames.YOUTUBE, state.youtubeSet, onSave, onClear, HelpLinks.YOUTUBE_KEY, onOpenLink, HelpLinks.YOUTUBE_GUIDE)
         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("New episode notifications", style = MaterialTheme.typography.titleMedium)
@@ -71,12 +84,13 @@ fun SettingsScreen(
             Switch(checked = state.notifications, onCheckedChange = onNotifications)
         }
         state.message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
-        PlayerSection(state, onPlayer)
+        PlayerSection(state, onPlayer, onOpenLink)
         ActorsSection(state, onRemoveActor)
-        StremioSection(sync, onLogin, onSync, onLogout, onForcePull, onForcePush)
+        StremioSection(sync, onLogin, onSync, onLogout, onForcePull, onForcePush, onOpenLink)
+        NuvioSection(nuvioState, onNuvioFind, onNuvioSignIn, onNuvioProfile, onNuvioSync, onNuvioLogout, onOpenLink)
         BackupSection(backup, onExport, onImport)
-        UpdateSection(update, onCheckUpdate, onInstall, onDismissUpdateMessage)
-        KeyField("OMDb API key", "Optional. Shows IMDb and Rotten Tomatoes scores. Free key from omdbapi.com.", SecretNames.OMDB, state.omdbSet, onSave, onClear)
+        UpdateSection(update, onCheckUpdate, onInstall, onDismissUpdateMessage, onAutoUpdate, onOpenLink)
+        KeyField("OMDb API key", "Optional. Shows IMDb and Rotten Tomatoes scores. The free key is emailed to you.", SecretNames.OMDB, state.omdbSet, onSave, onClear, HelpLinks.OMDB_KEY, onOpenLink)
         Text("About", style = MaterialTheme.typography.titleMedium)
         Text(
             "This product uses the TMDB API but is not endorsed or certified by TMDB.",
@@ -93,6 +107,9 @@ private fun KeyField(
     isSet: Boolean,
     onSave: (String, String) -> Boolean,
     onClear: (String) -> Unit,
+    getKeyUrl: String? = null,
+    onOpenLink: (String) -> Unit = {},
+    guideUrl: String? = null,
 ) {
     var text by remember { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -111,12 +128,14 @@ private fun KeyField(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { if (onSave(name, text)) text = "" }, enabled = text.isNotBlank()) { Text("Save") }
             if (isSet) OutlinedButton(onClick = { onClear(name) }) { Text("Remove") }
+            if (getKeyUrl != null) TextButton(onClick = { onOpenLink(getKeyUrl) }) { Text("Get key") }
+            if (guideUrl != null) TextButton(onClick = { onOpenLink(guideUrl) }) { Text("Guide") }
         }
     }
 }
 
 @Composable
-private fun StremioSection(sync: SyncState, onLogin: (String, String) -> Unit, onSync: () -> Unit, onLogout: () -> Unit, onForcePull: () -> Unit, onForcePush: () -> Unit) {
+private fun StremioSection(sync: SyncState, onLogin: (String, String) -> Unit, onSync: () -> Unit, onLogout: () -> Unit, onForcePull: () -> Unit, onForcePush: () -> Unit, onOpenLink: (String) -> Unit) {
     var confirm by remember { mutableStateOf<Boolean?>(null) } // true = pull, false = push
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -134,6 +153,7 @@ private fun StremioSection(sync: SyncState, onLogin: (String, String) -> Unit, o
                 TextButton(onClick = { confirm = false }, enabled = !sync.busy) { Text("Force push") }
             }
         } else {
+            TextButton(onClick = { onOpenLink(HelpLinks.STREMIO) }) { Text("Create a Stremio account") }
             OutlinedTextField(email, { email = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Email") })
             OutlinedTextField(
                 password, { password = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Password") },
@@ -158,13 +178,25 @@ private fun StremioSection(sync: SyncState, onLogin: (String, String) -> Unit, o
 }
 
 @Composable
-private fun UpdateSection(u: UpdateState, onCheck: () -> Unit, onInstall: () -> Unit, onDismiss: () -> Unit) {
+private fun UpdateSection(u: UpdateState, onCheck: () -> Unit, onInstall: () -> Unit, onDismiss: () -> Unit, onAuto: (Boolean) -> Unit, onOpenLink: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text("App updates", style = MaterialTheme.typography.titleMedium)
         Text("Version ${u.currentVersion}", style = MaterialTheme.typography.bodySmall)
+        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Install updates automatically")
+                Text(
+                    "Checks when the app opens (at most every 6 hours) and installs a new version without asking. " +
+                        "Android may still show its own install confirmation. Windows asks for administrator permission.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Switch(checked = u.auto, onCheckedChange = onAuto)
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = onCheck, enabled = !u.checking && u.progress == null) { Text(if (u.checking) "Checking" else "Check for updates") }
             u.available?.let { Button(onClick = onInstall, enabled = u.progress == null) { Text("Update to ${it.version}") } }
+            TextButton(onClick = { onOpenLink(HelpLinks.RELEASES) }) { Text("All releases") }
         }
         u.progress?.let { LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth()) }
         u.message?.let { Text(it) }
@@ -197,12 +229,16 @@ fun UpdateDialog(presenter: UpdatePresenter) {
 }
 
 @Composable
-private fun PlayerSection(state: SettingsState, onPlayer: (Player) -> Unit) {
+private fun PlayerSection(state: SettingsState, onPlayer: (Player) -> Unit, onOpenLink: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text("Default player", style = MaterialTheme.typography.titleMedium)
         Text("Used by the main Play button on a title page. Nuvio opens the title page, not a specific episode.", style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Player.entries.forEach { p -> FilterChip(selected = state.defaultPlayer == p, onClick = { onPlayer(p) }, label = { Text(p.label) }) }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = { onOpenLink(HelpLinks.STREMIO) }) { Text("Get Stremio") }
+            TextButton(onClick = { onOpenLink(HelpLinks.NUVIO) }) { Text("Get Nuvio") }
         }
     }
 }
@@ -234,5 +270,54 @@ private fun BackupSection(b: BackupState, onExport: () -> Unit, onImport: () -> 
             }
         } else Text("Not available on this device.")
         b.message?.let { Text(it) }
+    }
+}
+
+@Composable
+private fun NuvioSection(
+    n: NuvioState,
+    onFind: (String) -> Unit,
+    onSignIn: (String, String) -> Unit,
+    onProfile: (NuvioProfile) -> Unit,
+    onSync: () -> Unit,
+    onLogout: () -> Unit,
+    onOpenLink: (String) -> Unit,
+) {
+    var address by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("Nuvio account (self-hosted server)", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Syncs watched movies and episodes both ways: anything watched on either side ends up on both, and nothing is deleted. " +
+                "Works with a self-hosted Nuvio server. The official hosted Nuvio service cannot be used because its connection details are not published. Your password is not stored.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+        TextButton(onClick = { onOpenLink(HelpLinks.NUVIO) }) { Text("Nuvio setup and self-hosting") }
+        when (n.stage) {
+            NuvioStage.DISCONNECTED -> {
+                OutlinedTextField(address, { address = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Server address") }, placeholder = { Text("nuvio.example.com") })
+                Button(onClick = { onFind(address) }, enabled = address.isNotBlank() && !n.busy) { Text(if (n.busy) "Looking" else "Find server") }
+            }
+            NuvioStage.SERVER_FOUND -> {
+                Text("Server found: ${n.serverHost}", color = MaterialTheme.colorScheme.primary)
+                OutlinedTextField(email, { email = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Email") })
+                OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Password") }, visualTransformation = PasswordVisualTransformation())
+                Button(onClick = { onSignIn(email, password); password = "" }, enabled = email.isNotBlank() && password.isNotEmpty() && !n.busy) { Text(if (n.busy) "Signing in" else "Sign in") }
+            }
+            NuvioStage.CHOOSE_PROFILE -> {
+                Text("Which profile should sync?")
+                n.profiles.forEach { p -> OutlinedButton(onClick = { onProfile(p) }, enabled = !n.busy) { Text(p.name.ifBlank { "Profile ${p.index}" }) } }
+            }
+            NuvioStage.CONNECTED -> {
+                Text("Connected to ${n.serverHost}${if (n.profileName.isNotBlank()) " as ${n.profileName}" else ""}", color = MaterialTheme.colorScheme.primary)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onSync, enabled = !n.busy) { Text(if (n.busy) "Syncing" else "Sync now") }
+                    OutlinedButton(onClick = onLogout) { Text("Disconnect") }
+                }
+            }
+        }
+        n.message?.let { Text(it) }
+        n.log.take(5).forEach { Text("${it.action}: ${it.item}", style = MaterialTheme.typography.bodySmall) }
     }
 }

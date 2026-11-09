@@ -92,3 +92,36 @@ class BackgroundWorkTest {
         assertFalse(s.state.value.notifications)
     }
 }
+
+class HomeInProgressTest {
+    private val clock = Clock()
+    private val repo = newRepo(clock)
+    private fun title(n: Long, type: MediaType = MediaType.MOVIE) = TmdbTitle(TitleId(type, n), "T$n", 2020, null, setOf(18), 7.0)
+
+    @Test fun inProgressListsEverythingBeingWatchedNewestFirstAndRecentlyWatchedListsFinished() {
+        listOf(1L, 2L, 3L).forEach { n ->
+            repo.addToLibrary(title(n)); clock.now += 1000
+            repo.setProgress(TitleId(MediaType.MOVIE, n), if (n == 3L) LibraryStatus.COMPLETED else LibraryStatus.WATCHING, 0.4)
+        }
+        repo.addToLibrary(title(4)) // planned only
+        assertEquals(listOf(2L, 1L), repo.inProgress().map { it.candidate.id.tmdbId })
+        assertEquals(listOf(3L), repo.recentlyWatched().map { it.candidate.id.tmdbId })
+
+        val home = HomePresenter(repo, FakeCatalog(emptyList()), com.fitzy.flowstate.reco.Recommender(2026), com.fitzy.flowstate.reco.InterestPrompter(), CoroutineScope(Dispatchers.Unconfined), clock)
+        home.load()
+        assertEquals(listOf(2L, 1L), home.state.value.inProgress.map { it.candidate.id.tmdbId })
+        assertEquals(listOf(3L), home.state.value.recentlyWatched.map { it.candidate.id.tmdbId })
+    }
+
+    @Test fun settingsLinkButtonsOpenThePageOrExplain() {
+        val opened = mutableListOf<String>()
+        var ok = true
+        val p = SettingsPresenter(InMemorySecretStore(), openLink = { opened += it; ok }, onChanged = {})
+        p.openLink("https://www.themoviedb.org/settings/api")
+        assertEquals(listOf("https://www.themoviedb.org/settings/api"), opened)
+        assertNull(p.state.value.message)
+        ok = false
+        p.openLink("https://x.test")
+        assertTrue("Could not open the browser" in p.state.value.message!!)
+    }
+}

@@ -37,6 +37,7 @@ fun App(container: AppContainer, isTv: Boolean = false) {
         container.home.load()
         container.discover.load()
         container.sync.syncIfConnected()
+        container.nuvio.syncIfConnected()
         container.updates.checkOnLaunch()
     }
     FlowStateTheme {
@@ -54,7 +55,7 @@ fun App(container: AppContainer, isTv: Boolean = false) {
                     Tab.Discover -> DiscoverRoute(container.discover)
                     Tab.Search -> SearchRoute(container.search, onOpen = ::openTitle)
                     Tab.Library -> LibraryRoute(container.library, onOpen = ::openTitle)
-                    Tab.Settings -> SettingsRoute(container.settings, container.sync, container.updates, container.backup)
+                    Tab.Settings -> SettingsRoute(container.settings, container.sync, container.updates, container.backup, container.nuvio)
                 }
             }
         }
