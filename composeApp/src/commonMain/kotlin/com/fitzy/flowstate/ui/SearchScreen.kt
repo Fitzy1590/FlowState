@@ -69,7 +69,7 @@ fun SearchScreen(
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(state.results, key = { "${it.id.type}-${it.id.tmdbId}" }) { c ->
-                Row(Modifier.fillMaxWidth().clickable { onOpen(c) }, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().focusHighlight().clickable { onOpen(c) }, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     PosterCard(c, Modifier.width(64.dp))
                     Column(Modifier.weight(1f)) {
                         Text(c.name, style = MaterialTheme.typography.titleMedium)

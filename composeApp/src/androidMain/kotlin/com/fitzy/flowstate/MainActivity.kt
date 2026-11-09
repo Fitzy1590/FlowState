@@ -1,7 +1,10 @@
 package com.fitzy.flowstate
 
 import android.Manifest
+import android.app.UiModeManager
+import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -45,9 +48,13 @@ class MainActivity : ComponentActivity() {
                     .diskCache { DiskCache.Builder().directory(File(cacheDir, "poster-cache").toOkioPath()).maxSizeBytes(POSTER_CACHE_BYTES).build() }
                     .build()
             }
-            App(container)
+            App(container, isTv = isTelevision())
         }
     }
+
+    /** True on Android TV, where the UI uses top tabs, overscan margins and strong focus highlights. */
+    private fun isTelevision(): Boolean =
+        (getSystemService(Context.UI_MODE_SERVICE) as UiModeManager).currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
 
     override fun onDestroy() {
         val hooks = (application as FlowStateApp).container.hooks

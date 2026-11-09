@@ -35,7 +35,7 @@ fun PosterCard(c: Candidate, modifier: Modifier = Modifier, onClick: (() -> Unit
         modifier = modifier
             .aspectRatio(2f / 3f)
             .clip(RoundedCornerShape(8.dp))
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.focusHighlight().clickable(onClick = onClick) else Modifier)
             .background(Color.hsv(hue.toFloat(), 0.35f, 0.38f)),
         contentAlignment = Alignment.Center,
     ) {

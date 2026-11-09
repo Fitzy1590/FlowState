@@ -6,13 +6,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.disk.DiskCache
 import com.fitzy.flowstate.app.AppContainer
 import com.fitzy.flowstate.data.tmdb.withTmdbJson
-import com.fitzy.flowstate.db.FlowDatabase
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.CoroutineScope
@@ -31,13 +29,7 @@ private fun dataDir(): File {
     return base.also { it.mkdirs() }
 }
 
-private fun createDriver(): JdbcSqliteDriver {
-    val file = File(dataDir(), "flowstate.db")
-    val isNew = !file.exists()
-    val driver = JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}")
-    if (isNew) FlowDatabase.Schema.create(driver)
-    return driver
-}
+private fun createDriver() = openDatabase(File(dataDir(), "flowstate.db"))
 
 fun main() = application {
     setSingletonImageLoaderFactory { context ->
@@ -67,6 +59,7 @@ fun main() = application {
         state = rememberWindowState(size = DpSize(1200.dp, 800.dp)),
     ) {
         window.minimumSize = java.awt.Dimension(900, 600)
-        App(container)
+        // FLOWSTATE_TV=1 previews the Android TV layout on the desktop (developer aid).
+        App(container, isTv = System.getenv("FLOWSTATE_TV") == "1")
     }
 }

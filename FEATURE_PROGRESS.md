@@ -32,7 +32,7 @@ Posters: TMDB primary, Metahub fallback.
 | 5c | Installer wrappers (.apk / .msi) | Android + Windows code written (download, SHA-256 check, system installer); never run on a device | checksum verify test; manual install |
 | 6a | Android Mobile UI | todo | `assembleDebug`, emulator walkthrough |
 | 6b | Windows Desktop UI | todo | `:composeApp:run`, keyboard-only walkthrough |
-| 6c | Android TV UI | todo | D-pad walkthrough, focus restore works |
+| 6c | Android TV UI | partly: TV detected; top tabs and overscan margins; 3dp accent border + 1.05x scale on focus for posters and rows; focusRestorer on the Home row. NOT done: androidx.tv.material3 components (shared Material 3 used), restorers on other lists, initial focus targets. D-pad never tried on a TV (layout previewed on desktop with FLOWSTATE_TV=1) | D-pad walkthrough, focus restore works |
 | 6e | New-episode notifications | built (Android): switch in Settings, permission prompt, once per episode on air date; never run on a device. Windows: none yet | notification fires on test episode |
 | 6f | Upcoming calendar | built as an "Upcoming episodes" list at the top of Library (next episode per followed show); no month grid | shows unwatched upcoming episodes |
 | 7a | Watch Trailer button (TMDB video, YouTube link) | S1+S2 done (uses TMDB trailer key, falls back to YouTube search); autoplay depends on YouTube app/browser | link builder tests; no-trailer fallback |
@@ -58,6 +58,9 @@ Tap a poster on Home to open it. Two panes when wide (poster, actions left; over
 
 ## Navigation now
 Home, Discover, Search, Library, Settings (shared bottom bar). Library lists everything added, with status and progress; tap opens the title page.
+
+## Database safety
+Desktop now opens the database through the versioned driver (creates, migrates, handles an empty file); Android already uses the schema version. Before this, an old database file crashed startup ("no such table"). The current schema is the version-1 baseline: from the first release on, schema changes need `.sqm` migrations (rule added to CLAUDE.md).
 
 ## Open items
 - Verify every **[verify]** item in `SPEC.md` before coding it.

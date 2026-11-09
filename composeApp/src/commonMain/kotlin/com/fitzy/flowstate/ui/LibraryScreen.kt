@@ -39,7 +39,7 @@ fun LibraryScreen(items: List<LibraryItemView>, upcoming: List<UpcomingItem>, on
         if (upcoming.isNotEmpty()) {
             item { Text("Upcoming episodes", style = MaterialTheme.typography.titleLarge) }
             items(upcoming, key = { "up-${it.show.id.tmdbId}-${it.episode.season}-${it.episode.episode}" }) { u ->
-                Row(Modifier.fillMaxWidth().clickable { onOpen(u.show) }, verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().focusHighlight().clickable { onOpen(u.show) }, verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(u.show.name, style = MaterialTheme.typography.titleSmall)
                         Text("S${u.episode.season}E${u.episode.episode}${if (u.episode.name.isNotBlank()) "  ·  ${u.episode.name}" else ""}", style = MaterialTheme.typography.bodySmall)
@@ -50,7 +50,7 @@ fun LibraryScreen(items: List<LibraryItemView>, upcoming: List<UpcomingItem>, on
             item { Text("Your library", style = MaterialTheme.typography.titleLarge) }
         }
         items(items, key = { "${it.candidate.id.type}-${it.candidate.id.tmdbId}" }) { v ->
-            Row(Modifier.fillMaxWidth().clickable { onOpen(v.candidate) }, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().focusHighlight().clickable { onOpen(v.candidate) }, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 PosterCard(v.candidate, Modifier.width(64.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(v.candidate.name, style = MaterialTheme.typography.titleMedium)

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.fitzy.flowstate.app.AppContainer
 import com.fitzy.flowstate.theme.FlowStateTheme
 import com.fitzy.flowstate.ui.DiscoverRoute
@@ -25,7 +26,7 @@ private enum class Tab(val label: String) { Home("Home"), Discover("Discover"), 
 
 /** Top-level shell. Navigation is a shared bottom bar for now; per-platform navigation comes with the platform UI stages. */
 @Composable
-fun App(container: AppContainer) {
+fun App(container: AppContainer, isTv: Boolean = false) {
     var tab by remember { mutableStateOf(Tab.Home) }
     var detail by remember { mutableStateOf<Pair<DetailPresenter, EpisodesPresenter?>?>(null) }
     fun openTitle(c: Candidate) {
@@ -40,17 +41,8 @@ fun App(container: AppContainer) {
     }
     FlowStateTheme {
         UpdateDialog(container.updates)
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            bottomBar = {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                    Tab.entries.forEach { t ->
-                        NavigationBarItem(selected = tab == t, onClick = { tab = t }, icon = {}, label = { Text(t.label) })
-                    }
-                }
-            },
-        ) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding)) {
+        val content: @Composable (Modifier) -> Unit = { modifier ->
+            Column(modifier) {
                 val open = detail
                 if (open != null) {
                     PlatformBackHandler { detail = null }
@@ -65,6 +57,29 @@ fun App(container: AppContainer) {
                     Tab.Settings -> SettingsRoute(container.settings, container.sync, container.updates, container.backup)
                 }
             }
+        }
+        if (isTv) {
+            // TV: tabs along the top and a safe margin so nothing sits in the screen's overscan area.
+            // Surface also sets the default text color, which Scaffold does on phones.
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground) {
+                Column(Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 27.dp)) {
+                    TabRow(selectedTabIndex = tab.ordinal, containerColor = MaterialTheme.colorScheme.surface) {
+                        Tab.entries.forEach { t -> Tab(selected = tab == t, onClick = { tab = t; detail = null }, text = { Text(t.label) }) }
+                    }
+                    content(Modifier.fillMaxSize())
+                }
+            }
+        } else {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                bottomBar = {
+                    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                        Tab.entries.forEach { t ->
+                            NavigationBarItem(selected = tab == t, onClick = { tab = t; detail = null }, icon = {}, label = { Text(t.label) })
+                        }
+                    }
+                },
+            ) { padding -> content(Modifier.fillMaxSize().padding(padding)) }
         }
     }
 }

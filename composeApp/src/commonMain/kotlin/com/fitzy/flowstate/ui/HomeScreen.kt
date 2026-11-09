@@ -10,6 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.unit.dp
 import com.fitzy.flowstate.data.local.LibraryEntry
 import com.fitzy.flowstate.domain.Candidate
@@ -34,7 +35,8 @@ fun HomeScreen(state: HomeState, onAnswer: (Vote) -> Unit, onDismiss: () -> Unit
         state.prompt?.let { item { InterestCard(it, onAnswer, onDismiss, onOpen) } }
         item { Text("Recommended for you", style = MaterialTheme.typography.titleLarge) }
         item {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // focusRestorer: coming back to this row returns to the poster that was focused (D-pad).
+            LazyRow(Modifier.focusRestorer(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(state.recommended, key = { "${it.id.type}-${it.id.tmdbId}" }) { c -> PosterCard(c, Modifier.width(140.dp), onClick = { onOpen(c) }) }
             }
         }

@@ -25,6 +25,7 @@ Full design: `SPEC.md`. Backlog and status: `FEATURE_PROGRESS.md`. Read those on
 - Spoilers: episode summaries and recaps only cover episodes the user has watched.
 - UI style is "Cinema Dark" (tokens in `.claude/rules/ui-design.md`). Platform UI rules live in
   `.claude/rules/` and load by path.
+- Database: once a build is released, never edit `Flow.sq` tables in place. Add a numbered `.sqm` migration in `composeApp/src/commonMain/sqldelight/migrations/` (version = number of .sqm files + 1) and a test that opens an old-version file. Updating the app must keep user data.
 - Do not invent API shapes. Verify against the real endpoint or docs, and note it in `SPEC.md`.
 
 ## Token hygiene
