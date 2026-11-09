@@ -11,8 +11,8 @@ Posters: TMDB primary, Metahub fallback.
 | ID | Feature | Stage | Verify by |
 |---|---|---|---|
 | S0 | Gradle KMP project, targets android + desktop, CI, version catalog | done | `./gradlew check :composeApp:assembleDebug` green (Android + desktop tests, lint). `packageMsi` untested (needs Windows) |
-| 1a | Rule-based recommender | todo | unit tests on scoring fixtures |
-| 1b | Liked/disliked actors, soft penalty | todo | tests: caps +0.20 / -0.30, title never removed |
+| 1a | Rule-based recommender | S1 done (scorer + 13 tests); UI and data wiring todo | unit tests on scoring fixtures |
+| 1b | Liked/disliked actors, soft penalty | S1 done (caps and never-removed tested); actor list UI todo | tests: caps +0.20 / -0.30, title never removed |
 | 1c | Similar Shows/Movies tab | todo | detail page shows TMDB similar, de-duplicated |
 | 1e | Trakt / MDBList lists as sources | todo | list import test with recorded JSON |
 | 1f | Add to watchlist from recommendations | todo | card action writes local library |
@@ -54,3 +54,6 @@ Posters: TMDB primary, Metahub fallback.
 - Android SDK is not preinstalled in cloud sessions. Install cmdline-tools from `dl.google.com`, then `platforms;android-35` and `build-tools;35.0.0`, and write `sdk.dir` to `local.properties` (gitignored).
 - Cloud environment `flowstate` allows `dl.google.com` and `maven.google.com`. Maven Central can answer 429 under parallel load: use `--max-workers=1 --no-parallel` and retry.
 - CI uses `android-actions/setup-android`.
+- S1 done so far: domain models, `UserProfile`, `Recommender`, `TmdbClient` (search, similar, recommendations, discover, details), `PosterUrls`. 21 tests pass (`./gradlew check`).
+- TMDB response shapes and the Metahub URL are untested against live services (no TMDB key here, `images.metahub.space` is not in the cloud allowlist). Check both before relying on them.
+- Next: local database (library, votes, ratings), vote store + profile builder wiring, then 8a/8b UI.

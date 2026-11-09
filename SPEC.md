@@ -85,7 +85,7 @@ Recap videos are third-party and may contain spoilers for later seasons; label t
 - YES: raises affinity of the title's genres, keywords and top-billed cast (+1.0 weight unit each).
 - MAYBE: +0.3 weight units, and the title may be shown again after 30 days.
 - NEVER: title is never recommended again, and its genres/keywords get -0.2 weight units. It never changes the actor lists on its own; the app may suggest "Also dislike {actor}?" and the user confirms.
-- Affinity per feature = smoothed mean of vote weights (same Bayesian prior as genres). The "Explicit votes" signal in section 1 is the mean affinity of the candidate's features.
+- Affinity per feature = smoothed mean of vote weights (same Bayesian prior as genres). The "Explicit votes" signal in section 1 is `clamp(0.5 + 0.5 * mean affinity of the candidate's genres, keywords and top-5 cast, 0, 1)`, so no votes gives a neutral 0.5. Unknown features count as 0. Implemented in `reco/Recommender.kt`.
 
 **8a Interest prompt.** A card on Home ("Would this interest you?" with Yes / Maybe / Never), not a modal.
 - Frequency: at most one per app launch and one per 24 hours; never while a sync or playback is running; skipped if the user dismissed three in a row (back off for 7 days).
