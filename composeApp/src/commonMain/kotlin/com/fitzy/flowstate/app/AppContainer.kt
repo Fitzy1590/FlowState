@@ -15,6 +15,7 @@ import com.fitzy.flowstate.presenter.EpisodesPresenter
 import com.fitzy.flowstate.presenter.LibraryPresenter
 import com.fitzy.flowstate.presenter.SearchPresenter
 import com.fitzy.flowstate.presenter.SyncPresenter
+import com.fitzy.flowstate.ratings.OmdbClient
 import com.fitzy.flowstate.search.ClaudeQueryInterpreter
 import com.fitzy.flowstate.voice.NoVoiceInput
 import com.fitzy.flowstate.voice.VoiceInput
@@ -25,7 +26,9 @@ import com.fitzy.flowstate.sync.StremioApi
 import com.fitzy.flowstate.sync.StremioSync
 import com.fitzy.flowstate.secrets.SecretNames
 import com.fitzy.flowstate.links.LinkLauncher
+import com.fitzy.flowstate.presenter.DEFAULT_PLAYER_KEY
 import com.fitzy.flowstate.presenter.DetailPresenter
+import com.fitzy.flowstate.presenter.Player
 import com.fitzy.flowstate.presenter.DiscoverPresenter
 import com.fitzy.flowstate.presenter.HomePresenter
 import com.fitzy.flowstate.presenter.SettingsPresenter
@@ -38,7 +41,7 @@ import kotlinx.coroutines.CoroutineScope
 /** Wires the shared layer. Each platform entry point supplies a driver, a clock and a scope. */
 class AppContainer(
     driver: SqlDriver,
-    clock: () -> Long,
+    private val clock: () -> Long,
     val secrets: SecretStore,
     http: HttpClient,
     private val launcher: LinkLauncher,
@@ -71,15 +74,22 @@ class AppContainer(
         UpdateChecker(http, currentVersion, updateInstaller.assetSuffix), updateInstaller, repository, scope, clock, currentVersion,
     )
 
+    private val omdb = OmdbClient(http, apiKey = { secrets.get(SecretNames.OMDB) })
     private val queryInterpreter = ClaudeQueryInterpreter(claude)
     val search = SearchPresenter(repository, catalog, queryInterpreter, aiAvailable = { claude.hasKey }, voice = voice, scope = scope)
     val library = LibraryPresenter(repository)
 
     fun episodesFor(c: Candidate) = EpisodesPresenter(c, repository, catalog, summarizer, youtube, launcher, scope)
 
-    fun detailFor(c: Candidate) = DetailPresenter(c, repository, catalog, launcher, scope)
+    fun detailFor(c: Candidate) = DetailPresenter(c, repository, catalog, launcher, omdb, scope, clock)
 
-    val settings = SettingsPresenter(secrets) {
+    val settings = SettingsPresenter(
+        secrets,
+        getPlayer = { repository.getSetting(DEFAULT_PLAYER_KEY)?.let { runCatching { Player.valueOf(it) }.getOrNull() } ?: Player.STREMIO },
+        setPlayer = { repository.putSetting(DEFAULT_PLAYER_KEY, it.name) },
+        actors = { repository.actorRows() },
+        clearActor = { repository.setActorPref(it, "", null) },
+    ) {
         home.load()
         discover.load()
     }

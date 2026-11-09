@@ -23,6 +23,9 @@ object DeepLinks {
         "nuvio://meta?type=${type.stremioType().encodeURLParameter()}&id=${imdbId.trim().encodeURLParameter()}"
 }
 
+/** Letterboxd has no public API, so this only links out. The /imdb/ redirect form is not yet checked. */
+fun letterboxdLink(imdbId: String) = "https://letterboxd.com/imdb/$imdbId/"
+
 /** YouTube links for trailers (SPEC 7a). */
 object TrailerLinks {
     fun watch(youtubeKey: String) = "https://www.youtube.com/watch?v=$youtubeKey"

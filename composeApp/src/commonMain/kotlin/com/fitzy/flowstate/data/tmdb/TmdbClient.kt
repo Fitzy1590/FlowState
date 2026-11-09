@@ -69,6 +69,8 @@ class TmdbClient(
             trailerKey = dto.videos?.bestTrailerKey(),
             overview = dto.overview.orEmpty(),
             seasons = dto.seasons.map { SeasonInfo(it.number, it.episodeCount, it.name) },
+            castMembers = dto.credits?.cast?.sortedBy { it.order }?.map { CastMember(it.id, it.name, it.character) } ?: emptyList(),
+            nextEpisode = dto.nextEpisode?.takeIf { !it.airDate.isNullOrBlank() }?.let { UpcomingEpisode(it.season, it.episode, it.name, it.airDate!!) },
         )
     }
 

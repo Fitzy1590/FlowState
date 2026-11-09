@@ -39,6 +39,7 @@ internal data class DetailsDto(
     @SerialName("vote_average") val voteAverage: Double = 0.0,
     val overview: String? = null,
     val seasons: List<SeasonDto> = emptyList(),
+    @SerialName("next_episode_to_air") val nextEpisode: NextEpisodeDto? = null,
     @SerialName("imdb_id") val imdbId: String? = null,
     @SerialName("external_ids") val externalIds: ExternalIds? = null,
     val credits: Credits? = null,
@@ -67,7 +68,15 @@ internal data class EpisodeDto(
 @Serializable internal data class IdName(val id: Int, val name: String = "")
 @Serializable internal data class ExternalIds(@SerialName("imdb_id") val imdbId: String? = null)
 @Serializable internal data class Credits(val cast: List<CastDto> = emptyList())
-@Serializable internal data class CastDto(val id: Long, val name: String = "", val order: Int = 0)
+@Serializable internal data class CastDto(val id: Long, val name: String = "", val order: Int = 0, val character: String = "")
+
+@Serializable
+internal data class NextEpisodeDto(
+    @SerialName("air_date") val airDate: String? = null,
+    @SerialName("season_number") val season: Int = 0,
+    @SerialName("episode_number") val episode: Int = 0,
+    val name: String = "",
+)
 
 /** Movies return `keywords`, shows return `results`. */
 @Serializable
@@ -107,7 +116,13 @@ data class TmdbDetails(
     val trailerKey: String?,
     val overview: String = "",
     val seasons: List<SeasonInfo> = emptyList(),
+    val castMembers: List<CastMember> = emptyList(),
+    val nextEpisode: UpcomingEpisode? = null,
 )
+
+data class CastMember(val id: Long, val name: String, val character: String)
+
+data class UpcomingEpisode(val season: Int, val episode: Int, val name: String, val airDate: String)
 
 data class SeasonInfo(val number: Int, val episodeCount: Int, val name: String)
 

@@ -40,3 +40,19 @@ class SeasonPlanTest {
         assertEquals(SeasonPlan(null, null, null), SeasonPlan.of(listOf(SeasonInfo(1, 0, "empty")), emptySet()))
     }
 }
+
+class NextEpisodeTest {
+    private val seasons = listOf(SeasonInfo(0, 2, "Specials"), SeasonInfo(1, 3, "S1"), SeasonInfo(2, 2, "S2"))
+
+    @Test fun firstEpisodeWhenNothingWatched() = assertEquals(1 to 1, NextEpisode.of(seasons, emptySet()))
+
+    @Test fun skipsWatchedAndFindsGapsInOrder() {
+        assertEquals(1 to 2, NextEpisode.of(seasons, setOf(1 to 1, 1 to 3)))
+        assertEquals(2 to 1, NextEpisode.of(seasons, setOf(1 to 1, 1 to 2, 1 to 3)))
+    }
+
+    @Test fun nullWhenEverythingIsWatchedAndSpecialsAreIgnored() {
+        assertNull(NextEpisode.of(seasons, (1..3).map { 1 to it }.toSet() + (1..2).map { 2 to it }.toSet()))
+        assertEquals(1 to 1, NextEpisode.of(seasons, setOf(0 to 1, 0 to 2)))
+    }
+}

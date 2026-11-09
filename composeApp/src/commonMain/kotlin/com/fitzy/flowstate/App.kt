@@ -54,7 +54,7 @@ fun App(container: AppContainer) {
                 val open = detail
                 if (open != null) {
                     PlatformBackHandler { detail = null }
-                    DetailRoute(open.first, open.second, onBack = { detail = null })
+                    DetailRoute(open.first, open.second, onBack = { detail = null }, onOpen = ::openTitle)
                     return@Column
                 }
                 when (tab) {

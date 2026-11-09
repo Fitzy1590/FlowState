@@ -12,15 +12,15 @@ Posters: TMDB primary, Metahub fallback.
 |---|---|---|---|
 | S0 | Gradle KMP project, targets android + desktop, CI, version catalog | done | `./gradlew check :composeApp:assembleDebug` green (Android + desktop tests, lint). `packageMsi` untested (needs Windows) |
 | 1a | Rule-based recommender | S1 done (scorer + 13 tests); UI and data wiring todo | unit tests on scoring fixtures |
-| 1b | Liked/disliked actors, soft penalty | S1 done (caps and never-removed tested); actor list UI todo | tests: caps +0.20 / -0.30, title never removed |
-| 1c | Similar Shows/Movies tab | todo | detail page shows TMDB similar, de-duplicated |
+| 1b | Liked/disliked actors, soft penalty | S1+S2 done: Like / Dislike on the Cast tab, list with Remove in Settings | tests: caps +0.20 / -0.30, title never removed |
+| 1c | Similar Shows/Movies tab | S1+S2 done (TMDB recommendations + similar); live shape unverified | detail page shows TMDB similar, de-duplicated |
 | 1e | Trakt / MDBList lists as sources | todo | list import test with recorded JSON |
 | 1f | Add to watchlist from recommendations | S1 done (`quickAdd`); UI todo | card action writes local library |
 | 2a | 0-100 rating modal | S1 done (stored 0..100, range checked); modal built on the detail page (slider + number box), not yet seen on screen | persists 0..100, rejects out of range |
-| 2b | IMDb / RT badges, Letterboxd link | todo | OMDb parse test, badge hidden when absent |
+| 2b | IMDb / RT badges, Letterboxd link | S1+S2 done on the detail page (OMDb key in Settings, 7-day cache, Letterboxd button); badges not yet on poster cards; OMDb never run live | OMDb parse test, badge hidden when absent |
 | 3a | Stremio deep link | S1+S2 done (link builder, "Play in Stremio" button, launchers); real device launch todo | URI builder tests; manual launch on device |
 | 3b | Nuvio deep link (`nuvio://meta?...`) | S1+S2 done (matches Nuvio source; "Open in Nuvio" button); device launch todo | URI builder tests; manual launch |
-| 3c | Default player + next unwatched + no-app prompt | todo | next-episode logic tests |
+| 3c | Default player + next unwatched + no-app prompt | S1+S2 done: default player in Settings, "Play S2E3" for shows (Stremio only; Nuvio opens the title), not-installed message | next-episode logic tests |
 | 4a | Stremio sync | S1+S2 done (movies two-way, shows pull-only; login, Sync now, sync at launch); never run against a real Stremio account | conflict-resolution tests; sandbox account run |
 | 4b | Nuvio sync | BLOCKED: Nuvio uses a private Supabase backend (see SPEC 4). Proposed: Trakt bridge | same as 4a |
 | 4c | Background workers (WorkManager, desktop scheduler) | todo | worker runs on emulator; scheduler test |

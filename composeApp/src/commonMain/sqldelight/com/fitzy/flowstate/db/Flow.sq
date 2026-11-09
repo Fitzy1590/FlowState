@@ -76,6 +76,13 @@ CREATE TABLE SyncEvent (
     remoteTs INTEGER
 );
 
+CREATE TABLE RatingCache (
+    imdbId TEXT NOT NULL PRIMARY KEY,
+    imdb REAL,
+    rottenTomatoes INTEGER,
+    fetchedAt INTEGER NOT NULL
+);
+
 insertLibraryIfMissing:
 INSERT OR IGNORE INTO LibraryItem(type, tmdbId, name, year, posterPath, imdbId, genres, status, completion, abandoned, addedAt, lastActivityAt)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
@@ -143,3 +150,9 @@ SELECT * FROM SyncEvent ORDER BY id DESC LIMIT ?;
 
 updateProgressAt:
 UPDATE LibraryItem SET status = ?, completion = ?, abandoned = 0, lastActivityAt = ? WHERE type = ? AND tmdbId = ?;
+
+upsertRatingCache:
+INSERT OR REPLACE INTO RatingCache(imdbId, imdb, rottenTomatoes, fetchedAt) VALUES (?, ?, ?, ?);
+
+selectRatingCache:
+SELECT * FROM RatingCache WHERE imdbId = ?;

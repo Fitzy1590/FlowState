@@ -10,6 +10,10 @@ enum class LibraryStatus { PLANNED, WATCHING, COMPLETED, DROPPED }
 
 enum class ActorPref { LIKED, DISLIKED }
 
+data class CachedRatings(val imdb: Double?, val rottenTomatoes: Int?, val fetchedAt: Long)
+
+data class ActorRow(val id: Long, val name: String, val pref: ActorPref)
+
 data class LibraryItemView(val candidate: Candidate, val status: LibraryStatus, val completion: Double)
 
 data class LocalSyncRow(
@@ -183,6 +187,9 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
         if (pref == null) q.deleteActor(personId) else q.upsertActor(personId, name, pref.name)
     }
 
+    /** Actors with names, for the settings list. */
+    fun actorRows(): List<ActorRow> = q.selectActors().executeAsList().map { ActorRow(it.personId, it.name, ActorPref.valueOf(it.pref)) }
+
     fun actorPrefs(): ActorPrefs {
         val rows = q.selectActors().executeAsList()
         return ActorPrefs(
@@ -209,6 +216,14 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
             }
         return UserProfile.build(history, votes(), actorPrefs())
     }
+
+    // ---- External ratings cache ----
+
+    fun cachedRatings(imdbId: String): CachedRatings? = q.selectRatingCache(imdbId).executeAsOneOrNull()
+        ?.let { CachedRatings(it.imdb, it.rottenTomatoes?.toInt(), it.fetchedAt) }
+
+    fun cacheRatings(imdbId: String, imdb: Double?, rottenTomatoes: Int?) =
+        q.upsertRatingCache(imdbId, imdb, rottenTomatoes?.toLong(), clock())
 
     // ---- Interest prompt state ----
 

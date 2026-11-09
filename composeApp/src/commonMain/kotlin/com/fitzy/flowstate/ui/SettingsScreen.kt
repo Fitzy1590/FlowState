@@ -14,6 +14,7 @@ import com.fitzy.flowstate.presenter.SettingsPresenter
 import com.fitzy.flowstate.presenter.SyncPresenter
 import com.fitzy.flowstate.presenter.UpdatePresenter
 import com.fitzy.flowstate.presenter.UpdateState
+import com.fitzy.flowstate.presenter.Player
 import com.fitzy.flowstate.presenter.SettingsState
 import com.fitzy.flowstate.presenter.SyncState
 import com.fitzy.flowstate.secrets.SecretNames
@@ -23,7 +24,7 @@ fun SettingsRoute(presenter: SettingsPresenter, sync: SyncPresenter, updates: Up
     val state by presenter.state.collectAsState()
     val syncState by sync.state.collectAsState()
     val updateState by updates.state.collectAsState()
-    SettingsScreen(state, presenter::save, presenter::clear, syncState, sync::login, sync::syncNow, sync::logout, updateState, updates::checkNow, updates::install, updates::dismissMessage)
+    SettingsScreen(state, presenter::save, presenter::clear, presenter::setDefaultPlayer, presenter::removeActor, syncState, sync::login, sync::syncNow, sync::logout, updateState, updates::checkNow, updates::install, updates::dismissMessage)
 }
 
 @Composable
@@ -31,6 +32,8 @@ fun SettingsScreen(
     state: SettingsState,
     onSave: (String, String) -> Boolean,
     onClear: (String) -> Unit,
+    onPlayer: (Player) -> Unit = {},
+    onRemoveActor: (Long) -> Unit = {},
     sync: SyncState = SyncState(),
     onLogin: (String, String) -> Unit = { _, _ -> },
     onSync: () -> Unit = {},
@@ -49,8 +52,11 @@ fun SettingsScreen(
         KeyField("TMDB read access token", "Needed for real posters and recommendations. Use the long v4 token.", SecretNames.TMDB, state.tmdbSet, onSave, onClear)
         KeyField("Claude API key", "Needed for AI search and episode summaries.", SecretNames.CLAUDE, state.claudeSet, onSave, onClear)
         KeyField("YouTube Data API key", "Optional. Lets season recaps open the top result.", SecretNames.YOUTUBE, state.youtubeSet, onSave, onClear)
+        PlayerSection(state, onPlayer)
+        ActorsSection(state, onRemoveActor)
         StremioSection(sync, onLogin, onSync, onLogout)
         UpdateSection(update, onCheckUpdate, onInstall, onDismissUpdateMessage)
+        KeyField("OMDb API key", "Optional. Shows IMDb and Rotten Tomatoes scores. Free key from omdbapi.com.", SecretNames.OMDB, state.omdbSet, onSave, onClear)
         Text("About", style = MaterialTheme.typography.titleMedium)
         Text(
             "This product uses the TMDB API but is not endorsed or certified by TMDB.",
@@ -154,4 +160,30 @@ fun UpdateDialog(presenter: UpdatePresenter) {
             }
         },
     )
+}
+
+@Composable
+private fun PlayerSection(state: SettingsState, onPlayer: (Player) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("Default player", style = MaterialTheme.typography.titleMedium)
+        Text("Used by the main Play button on a title page. Nuvio opens the title page, not a specific episode.", style = MaterialTheme.typography.bodySmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Player.entries.forEach { p -> FilterChip(selected = state.defaultPlayer == p, onClick = { onPlayer(p) }, label = { Text(p.label) }) }
+        }
+    }
+}
+
+@Composable
+private fun ActorsSection(state: SettingsState, onRemove: (Long) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("Actors you like and dislike", style = MaterialTheme.typography.titleMedium)
+        Text("Mark actors from the Cast tab of any title. Disliked actors lower a title in your recommendations but never hide it.", style = MaterialTheme.typography.bodySmall)
+        if (state.actors.isEmpty()) Text("None yet.")
+        state.actors.forEach { a ->
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text("${a.name.ifBlank { "Actor ${a.id}" }}  ·  ${if (a.pref == com.fitzy.flowstate.data.local.ActorPref.LIKED) "Liked" else "Disliked"}", Modifier.weight(1f))
+                TextButton(onClick = { onRemove(a.id) }) { Text("Remove") }
+            }
+        }
+    }
 }
