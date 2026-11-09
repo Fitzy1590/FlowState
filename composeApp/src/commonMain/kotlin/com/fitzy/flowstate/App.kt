@@ -16,6 +16,7 @@ import com.fitzy.flowstate.ui.DetailRoute
 import com.fitzy.flowstate.ui.HomeRoute
 import com.fitzy.flowstate.ui.PlatformBackHandler
 import com.fitzy.flowstate.ui.SettingsRoute
+import com.fitzy.flowstate.ui.UpdateDialog
 
 private enum class Tab(val label: String) { Home("Home"), Discover("Discover"), Settings("Settings") }
 
@@ -28,8 +29,10 @@ fun App(container: AppContainer) {
         container.home.load()
         container.discover.load()
         container.sync.syncIfConnected()
+        container.updates.checkOnLaunch()
     }
     FlowStateTheme {
+        UpdateDialog(container.updates)
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
@@ -53,7 +56,7 @@ fun App(container: AppContainer) {
                         detail = container.detailFor(c).also { it.load() } to eps
                     })
                     Tab.Discover -> DiscoverRoute(container.discover)
-                    Tab.Settings -> SettingsRoute(container.settings, container.sync)
+                    Tab.Settings -> SettingsRoute(container.settings, container.sync, container.updates)
                 }
             }
         }

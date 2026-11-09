@@ -13,6 +13,9 @@ import com.fitzy.flowstate.domain.Candidate
 import com.fitzy.flowstate.data.tmdb.TmdbClient
 import com.fitzy.flowstate.presenter.EpisodesPresenter
 import com.fitzy.flowstate.presenter.SyncPresenter
+import com.fitzy.flowstate.presenter.UpdatePresenter
+import com.fitzy.flowstate.update.UpdateChecker
+import com.fitzy.flowstate.update.UpdateInstaller
 import com.fitzy.flowstate.sync.StremioApi
 import com.fitzy.flowstate.sync.StremioSync
 import com.fitzy.flowstate.secrets.SecretNames
@@ -35,6 +38,8 @@ class AppContainer(
     http: HttpClient,
     private val launcher: LinkLauncher,
     private val scope: CoroutineScope,
+    currentVersion: String,
+    updateInstaller: UpdateInstaller,
 ) {
     val repository = FlowRepository(FlowDatabase(driver), clock)
     private val catalog: Catalog = SecretAwareCatalog(secrets, http, seeds = { repository.profile().likedSeeds }, clock = clock)
@@ -55,6 +60,10 @@ class AppContainer(
         home.load()
         discover.load()
     }
+
+    val updates = UpdatePresenter(
+        UpdateChecker(http, currentVersion, updateInstaller.assetSuffix), updateInstaller, repository, scope, clock, currentVersion,
+    )
 
     fun episodesFor(c: Candidate) = EpisodesPresenter(c, repository, catalog, summarizer, youtube, launcher, scope)
 

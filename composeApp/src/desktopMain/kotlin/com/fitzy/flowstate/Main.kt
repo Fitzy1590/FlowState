@@ -43,7 +43,13 @@ fun main() = application {
             .build()
     }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    val container = AppContainer(createDriver(), clock = System::currentTimeMillis, secrets = desktopSecretStore(dataDir()), http = HttpClient(OkHttp).withTmdbJson(), launcher = DesktopLinkLauncher(), scope = scope)
+    val http = HttpClient(OkHttp).withTmdbJson()
+    val container = AppContainer(
+        createDriver(), clock = System::currentTimeMillis, secrets = desktopSecretStore(dataDir()), http = http,
+        launcher = DesktopLinkLauncher(), scope = scope,
+        currentVersion = System.getProperty("flowstate.version") ?: "0.1.0",
+        updateInstaller = DesktopUpdateInstaller(http, File(dataDir(), "updates")),
+    )
     Window(
         onCloseRequest = ::exitApplication,
         title = "FlowState",

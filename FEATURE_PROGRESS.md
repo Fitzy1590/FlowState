@@ -27,9 +27,9 @@ Posters: TMDB primary, Metahub fallback.
 | 4e | Conflict log + force pull/push | partly: sync log stored and last 5 shown in Settings; force pull/push not built | log rows match test conflicts |
 | 4g | Export/import backup | todo | round-trip test |
 | 4h | Encrypted credential storage | S1 done (store, Android Keystore AES-GCM, Windows DPAPI, Settings screen); on-device and on-Windows check todo | secrets never in plain prefs/logs |
-| 5a | Launch update check | todo | version-compare tests; skipped version persists |
-| 5b | Settings "Check for Updates" + progress | todo | progress UI test |
-| 5c | Installer wrappers (.apk / .msi) | todo | checksum verify test; manual install |
+| 5a | Launch update check | S1+S2 done (6h throttle, skip version, dialog); needs a published release to test end to end | version-compare tests; skipped version persists |
+| 5b | Settings "Check for Updates" + progress | S1+S2 done | progress UI test |
+| 5c | Installer wrappers (.apk / .msi) | Android + Windows code written (download, SHA-256 check, system installer); never run on a device | checksum verify test; manual install |
 | 6a | Android Mobile UI | todo | `assembleDebug`, emulator walkthrough |
 | 6b | Windows Desktop UI | todo | `:composeApp:run`, keyboard-only walkthrough |
 | 6c | Android TV UI | todo | D-pad walkthrough, focus restore works |
@@ -50,6 +50,11 @@ Tap a poster on Home to open it. Two panes when wide (poster, actions left; over
 
 ## Sync (first pass)
 `SyncEngine` (latest activity wins, equal = no change, no deletes), `StremioApi`, `StremioSync`, `SyncPresenter`, Stremio section in Settings. Not built: background workers (4c: WorkManager / desktop scheduler; sync currently runs at launch and on Sync now), decoding the show watched bitfield, Trakt bridge.
+
+## Releases and testing builds
+- Every push builds a debug APK in GitHub Actions (artifact `flowstate-debug-apk` on the run page, kept 14 days).
+- Pushing a tag like `v0.2.0` runs `release.yml`: builds a release APK (and a Windows MSI, best effort), writes `.sha256` files and publishes a GitHub Release. The in-app updater reads the latest release.
+- Signing: set repo secrets `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` so every release is signed with the same key. Without them each build uses a throwaway debug key and cannot be installed over a previous one.
 
 ## Open items
 - Verify every **[verify]** item in `SPEC.md` before coding it.

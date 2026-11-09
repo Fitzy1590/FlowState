@@ -12,15 +12,18 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.fitzy.flowstate.presenter.SettingsPresenter
 import com.fitzy.flowstate.presenter.SyncPresenter
+import com.fitzy.flowstate.presenter.UpdatePresenter
+import com.fitzy.flowstate.presenter.UpdateState
 import com.fitzy.flowstate.presenter.SettingsState
 import com.fitzy.flowstate.presenter.SyncState
 import com.fitzy.flowstate.secrets.SecretNames
 
 @Composable
-fun SettingsRoute(presenter: SettingsPresenter, sync: SyncPresenter) {
+fun SettingsRoute(presenter: SettingsPresenter, sync: SyncPresenter, updates: UpdatePresenter) {
     val state by presenter.state.collectAsState()
     val syncState by sync.state.collectAsState()
-    SettingsScreen(state, presenter::save, presenter::clear, syncState, sync::login, sync::syncNow, sync::logout)
+    val updateState by updates.state.collectAsState()
+    SettingsScreen(state, presenter::save, presenter::clear, syncState, sync::login, sync::syncNow, sync::logout, updateState, updates::checkNow, updates::install, updates::dismissMessage)
 }
 
 @Composable
@@ -32,6 +35,10 @@ fun SettingsScreen(
     onLogin: (String, String) -> Unit = { _, _ -> },
     onSync: () -> Unit = {},
     onLogout: () -> Unit = {},
+    update: UpdateState = UpdateState("0.0.0"),
+    onCheckUpdate: () -> Unit = {},
+    onInstall: () -> Unit = {},
+    onDismissUpdateMessage: () -> Unit = {},
 ) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -43,6 +50,7 @@ fun SettingsScreen(
         KeyField("Claude API key", "Needed for AI search and episode summaries.", SecretNames.CLAUDE, state.claudeSet, onSave, onClear)
         KeyField("YouTube Data API key", "Optional. Lets season recaps open the top result.", SecretNames.YOUTUBE, state.youtubeSet, onSave, onClear)
         StremioSection(sync, onLogin, onSync, onLogout)
+        UpdateSection(update, onCheckUpdate, onInstall, onDismissUpdateMessage)
         Text("About", style = MaterialTheme.typography.titleMedium)
         Text(
             "This product uses the TMDB API but is not endorsed or certified by TMDB.",
@@ -107,4 +115,43 @@ private fun StremioSection(sync: SyncState, onLogin: (String, String) -> Unit, o
         sync.message?.let { Text(it) }
         sync.log.take(5).forEach { Text("${it.action}: ${it.item}", style = MaterialTheme.typography.bodySmall) }
     }
+}
+
+@Composable
+private fun UpdateSection(u: UpdateState, onCheck: () -> Unit, onInstall: () -> Unit, onDismiss: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("App updates", style = MaterialTheme.typography.titleMedium)
+        Text("Version ${u.currentVersion}", style = MaterialTheme.typography.bodySmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = onCheck, enabled = !u.checking && u.progress == null) { Text(if (u.checking) "Checking" else "Check for updates") }
+            u.available?.let { Button(onClick = onInstall, enabled = u.progress == null) { Text("Update to ${it.version}") } }
+        }
+        u.progress?.let { LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth()) }
+        u.message?.let { Text(it) }
+    }
+}
+
+/** Shown at launch when a newer version is found, unless that version was skipped. */
+@Composable
+fun UpdateDialog(presenter: UpdatePresenter) {
+    val state by presenter.state.collectAsState()
+    val info = state.available
+    if (!state.prompt || info == null) return
+    AlertDialog(
+        onDismissRequest = presenter::later,
+        title = { Text("Update available: ${info.version}") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text("You have ${state.currentVersion}.")
+                if (info.notes.isNotBlank()) Text(info.notes.take(600), style = MaterialTheme.typography.bodySmall)
+            }
+        },
+        confirmButton = { Button(onClick = presenter::install) { Text("Update now") } },
+        dismissButton = {
+            Row {
+                TextButton(onClick = presenter::later) { Text("Later") }
+                TextButton(onClick = presenter::skipVersion) { Text("Skip this version") }
+            }
+        },
+    )
 }

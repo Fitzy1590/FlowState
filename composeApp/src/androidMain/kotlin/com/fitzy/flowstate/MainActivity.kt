@@ -27,12 +27,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val driver = AndroidSqliteDriver(FlowDatabase.Schema, applicationContext, "flowstate.db")
+        val http = HttpClient(OkHttp).withTmdbJson()
+        val version = packageManager.getPackageInfo(packageName, 0).versionName ?: "0.0.0"
         val container = AppContainer(
             driver, clock = System::currentTimeMillis,
             secrets = androidSecretStore(applicationContext),
-            http = HttpClient(OkHttp).withTmdbJson(),
+            http = http,
             launcher = AndroidLinkLauncher(this),
             scope = scope,
+            currentVersion = version,
+            updateInstaller = AndroidUpdateInstaller(applicationContext, http),
         )
         setContent {
             setSingletonImageLoaderFactory { context ->

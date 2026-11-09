@@ -209,7 +209,11 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
         q.putSetting("prompt.backoffUntil", s.backoffUntil.toString())
     }
 
-    private fun setting(key: String): String? = q.getSetting(key).executeAsOneOrNull()
+    private fun setting(key: String): String? = getSetting(key)
+
+    fun getSetting(key: String): String? = q.getSetting(key).executeAsOneOrNull()
+
+    fun putSetting(key: String, value: String) = q.putSetting(key, value)
 
     private fun String.ints() = if (isBlank()) emptyList() else split(",").mapNotNull { it.toIntOrNull() }
     private fun String.longs() = if (isBlank()) emptyList() else split(",").mapNotNull { it.toLongOrNull() }
