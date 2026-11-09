@@ -1,6 +1,7 @@
 name: CI
 on:
   push:
+    tags-ignore: ['v*']
   pull_request:
 jobs:
   check:
@@ -11,6 +12,11 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew check :composeApp:assembleDebug
+      # GitHub's Ubuntu runners already include the Android SDK.
+      - run: ./gradlew check :composeApp:assembleDebug --max-workers=2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flowstate-debug-apk
+          path: composeApp/build/outputs/apk/debug/*.apk
+          retention-days: 14

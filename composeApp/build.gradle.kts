@@ -55,6 +55,10 @@ kotlin {
     }
 }
 
+// Version comes from the release tag in CI (-PversionName / -PversionCode); defaults suit local builds.
+val appVersionName = (findProperty("versionName") as String?) ?: "0.1.0"
+val appVersionCode = ((findProperty("versionCode") as String?) ?: "1").toInt()
+
 android {
     namespace = "com.fitzy.flowstate"
     compileSdk = 35
@@ -62,14 +66,29 @@ android {
         applicationId = "com.fitzy.flowstate"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    buildTypes { release { isMinifyEnabled = false } }
+    // Release signing key comes from the environment (CI secrets). Without one, release builds use the debug key.
+    val keystorePath = System.getenv("FLOWSTATE_KEYSTORE")
+    if (keystorePath != null) {
+        signingConfigs.create("release") {
+            storeFile = file(keystorePath)
+            storePassword = System.getenv("FLOWSTATE_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("FLOWSTATE_KEY_ALIAS")
+            keyPassword = System.getenv("FLOWSTATE_KEY_PASSWORD")
+        }
+    }
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+        }
+    }
 }
 
 sqldelight {
@@ -83,10 +102,14 @@ sqldelight {
 compose.desktop {
     application {
         mainClass = "com.fitzy.flowstate.MainKt"
+        jvmArgs += "-Dflowstate.version=$appVersionName"
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe)
             packageName = "FlowState"
-            packageVersion = "1.0.0"
+            // MSI needs a major version of at least 1, so 0.x.y is released as 1.x.y.
+            packageVersion = appVersionName.split(".").let { v ->
+                if (v.size == 3 && v.all { it.toIntOrNull() != null }) "${maxOf(v[0].toInt(), 1)}.${v[1]}.${v[2]}" else "1.0.0"
+            }
         }
     }
 }
