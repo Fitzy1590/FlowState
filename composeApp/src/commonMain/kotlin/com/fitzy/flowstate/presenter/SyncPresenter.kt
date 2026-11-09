@@ -15,6 +15,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** Why titles were left out of a sync, in words the user can act on. Null when none were. */
+fun skippedNote(skipped: Int, hasTmdb: Boolean): String? = when {
+    skipped <= 0 -> null
+    !hasTmdb -> "$skipped title(s) were found but cannot be identified without a TMDB token. Tap \"Get key\" under TMDB in Settings, save the token, then sync again."
+    else -> "$skipped title(s) could not be found on TMDB and were skipped. If that is all of them, check that the saved token is the long \"API Read Access Token\"."
+}
+
 data class SyncState(
     val connected: Boolean = false,
     val busy: Boolean = false,
@@ -29,6 +36,7 @@ class SyncPresenter(
     private val sync: StremioSync,
     private val repo: FlowRepository,
     private val scope: CoroutineScope,
+    private val hasTmdb: () -> Boolean = { true },
     private val onSynced: () -> Unit,
 ) {
     private val _state = MutableStateFlow(read())
@@ -84,7 +92,7 @@ class SyncPresenter(
         val msg = when (result) {
             is SyncResult.Done -> if (quiet && result.pushed + result.pulled + result.skipped == 0) null else buildString {
                 append("Synced: ${result.pulled} updated here, ${result.pushed} sent to Stremio.")
-                if (result.skipped > 0) append(" ${result.skipped} title(s) could not be matched to TMDB and were skipped. Save a TMDB token in Settings, then sync again.")
+                skippedNote(result.skipped, hasTmdb())?.let { append(" ").append(it) }
             }
             SyncResult.NotConnected -> "Not connected to Stremio."
             SyncResult.Failed -> if (quiet) null else "Sync failed. Nothing was changed. Try again later."

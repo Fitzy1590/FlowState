@@ -5,6 +5,10 @@ import com.fitzy.flowstate.data.local.LibraryStatus
 import com.fitzy.flowstate.data.tmdb.TmdbClient
 import com.fitzy.flowstate.data.tmdb.TmdbTitle
 import com.fitzy.flowstate.domain.MediaType
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -48,19 +52,22 @@ class StremioSync(
         val pushes = ArrayList<JsonObject>()
         var pulled = 0
         var skipped = 0
-        for (d in SyncEngine.plan(local, remote, prefer = prefer)) {
+        val decisions = SyncEngine.plan(local, remote, prefer = prefer)
+        // Look titles up in parallel: a real library can hold hundreds of titles.
+        val resolved = resolveAll(decisions.filter { it.action == SyncAction.PULL && localByImdb[it.item.imdbId] == null }.map { it.item }.distinctBy { it.imdbId })
+        for (d in decisions) {
             when (d.action) {
                 SyncAction.PUSH -> {
                     val existing = remoteById[d.item.imdbId]
                     pushes += if (existing != null) StremioItems.withLocalProgress(existing, d.item, now) else StremioItems.newMovie(d.item, now)
                     repo.logSync("stremio", d.item.name, if (prefer != null) "forced push" else "pushed", d.localTs, d.remoteTs)
                 }
-                SyncAction.PULL -> if (applyPull(d.item, localByImdb[d.item.imdbId]?.id)) {
+                SyncAction.PULL -> if (applyPull(d.item, localByImdb[d.item.imdbId]?.id, resolved[d.item.imdbId])) {
                     pulled++
                     repo.logSync("stremio", d.item.name, if (prefer != null) "forced pull" else "pulled", d.localTs, d.remoteTs)
                 } else {
                     skipped++
-                    repo.logSync("stremio", d.item.name, "skipped (not matched to TMDB)", d.localTs, d.remoteTs)
+                    if (skipped <= MAX_SKIP_LOG) repo.logSync("stremio", d.item.name, "skipped (not matched to TMDB)", d.localTs, d.remoteTs)
                 }
             }
         }
@@ -68,9 +75,16 @@ class StremioSync(
         return SyncResult.Done(pushes.size, pulled, skipped)
     }
 
-    private suspend fun applyPull(item: SyncItem, existing: com.fitzy.flowstate.domain.TitleId?): Boolean {
+    /** Looks up several titles at once, a few at a time. A title TMDB does not know maps to null. */
+    private suspend fun resolveAll(items: List<SyncItem>): Map<String, TmdbTitle?> = coroutineScope {
+        val gate = Semaphore(RESOLVE_PARALLELISM)
+        items.map { it.imdbId to async { gate.withPermit { runCatching { resolver.resolve(it.imdbId) }.getOrNull() } } }
+            .associate { (id, job) -> id to job.await() }
+    }
+
+    private fun applyPull(item: SyncItem, existing: com.fitzy.flowstate.domain.TitleId?, resolved: TmdbTitle?): Boolean {
         val id = existing ?: run {
-            val title = resolver.resolve(item.imdbId) ?: return false
+            val title = resolved ?: return false
             if (title.id.type != item.type) return false
             repo.addToLibrary(title, item.imdbId)
             title.id
@@ -82,5 +96,10 @@ class StremioSync(
         }
         repo.setProgressAt(id, status, item.completion, item.lastActivityAt)
         return true
+    }
+
+    private companion object {
+        const val RESOLVE_PARALLELISM = 8
+        const val MAX_SKIP_LOG = 10
     }
 }

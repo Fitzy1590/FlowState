@@ -82,7 +82,7 @@ class AppContainer(
     private val nuvioStore = NuvioAccountStore(secrets)
     private val nuvioApi = NuvioApi(http, nuvioStore, clientId = ::nuvioClientId, clock = clock)
     private val nuvioSync = NuvioSync(nuvioApi, nuvioStore, repository, catalog, tmdbResolver, clock)
-    val nuvio = NuvioPresenter(http, nuvioApi, nuvioStore, nuvioSync, repository, scope) {
+    val nuvio = NuvioPresenter(http, nuvioApi, nuvioStore, nuvioSync, repository, scope, hasTmdb = { secrets.get(SecretNames.TMDB) != null }) {
         home.load()
         discover.load()
     }
@@ -93,7 +93,7 @@ class AppContainer(
         ("flowstate-" + (1..32).map { chars[kotlin.random.Random.nextInt(chars.length)] }.joinToString("")).also { repository.putSetting("nuvio.clientId", it) }
     }
 
-    val sync = SyncPresenter(secrets, StremioApi(http), stremioSync, repository, scope) {
+    val sync = SyncPresenter(secrets, StremioApi(http), stremioSync, repository, scope, hasTmdb = { secrets.get(SecretNames.TMDB) != null }) {
         home.load()
         discover.load()
     }

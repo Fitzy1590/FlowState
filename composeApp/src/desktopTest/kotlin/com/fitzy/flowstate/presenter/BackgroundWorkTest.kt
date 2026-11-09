@@ -125,3 +125,13 @@ class HomeInProgressTest {
         assertTrue("Could not open the browser" in p.state.value.message!!)
     }
 }
+
+class SkippedNoteTest {
+    @Test fun saysExactlyWhatToDo() {
+        assertNull(skippedNote(0, hasTmdb = false))
+        assertTrue("without a TMDB token" in skippedNote(914, hasTmdb = false)!! && "914" in skippedNote(914, hasTmdb = false)!!)
+        assertTrue("Get key" in skippedNote(3, hasTmdb = false)!!)
+        assertTrue("could not be found on TMDB" in skippedNote(3, hasTmdb = true)!!)
+        assertTrue("Read Access Token" in skippedNote(3, hasTmdb = true)!!)
+    }
+}

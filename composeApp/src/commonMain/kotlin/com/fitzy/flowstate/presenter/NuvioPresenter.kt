@@ -33,6 +33,7 @@ class NuvioPresenter(
     private val sync: NuvioSync,
     private val repo: FlowRepository,
     private val scope: CoroutineScope,
+    private val hasTmdb: () -> Boolean = { true },
     private val onSynced: () -> Unit,
 ) {
     private val _state = MutableStateFlow(read())
@@ -109,7 +110,7 @@ class NuvioPresenter(
         val msg = when (result) {
             is SyncResult.Done -> if (quiet && result.pushed + result.pulled + result.skipped == 0) null else buildString {
                 append("Synced: ${result.pulled} updated here, ${result.pushed} sent to Nuvio.")
-                if (result.skipped > 0) append(" ${result.skipped} title(s) could not be matched to TMDB and were skipped. Save a TMDB token in Settings, then sync again.")
+                skippedNote(result.skipped, hasTmdb())?.let { append(" ").append(it) }
             }
             SyncResult.NotConnected -> "Not connected to Nuvio."
             SyncResult.Failed -> if (quiet) null else "Sync failed. Nothing was changed. If this keeps happening, sign in again."

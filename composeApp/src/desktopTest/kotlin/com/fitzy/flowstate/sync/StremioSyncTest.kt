@@ -121,3 +121,33 @@ class StremioSyncTest {
         assertEquals("pulled", repo.recentSyncEvents().single().action)
     }
 }
+
+class StremioBigLibraryTest {
+    private val clock = Clock(1_800_000_000_000)
+    private val repo = newRepo(clock)
+
+    @Test fun aLargeLibraryIsLookedUpInParallelAndSkippedTitlesAreCountedButOnlyFewLogged() = runTest {
+        val items = (1..200).map { i ->
+            buildJsonObject {
+                put("_id", "tt%07d".format(i)); put("name", "Title $i"); put("type", "movie"); put("removed", false); put("temp", false)
+                put("_mtime", StremioItems.iso(1_700_000_000_000)); putJsonObject("state") { put("timeOffset", 0); put("duration", 0); put("flaggedWatched", 0) }
+            }
+        }
+        var inFlight = 0; var maxInFlight = 0
+        val resolver = TitleResolver { imdb ->
+            inFlight++; maxInFlight = maxOf(maxInFlight, inFlight)
+            kotlinx.coroutines.delay(5)
+            inFlight--
+            val n = imdb.removePrefix("tt").toLong()
+            if (n % 2 == 0L) null else TmdbTitle(TitleId(MediaType.MOVIE, n), "Title $n", 2020, null, setOf(18), 7.0) // half are unknown to TMDB
+        }
+        val api = StremioApi(HttpClient(MockEngine {
+            respond(buildJsonObject { put("result", JsonArray(items)) }.toString(), HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+        }).withTmdbJson())
+        val r = StremioSync(api, repo, resolver, { "AK" }, clock).sync() as SyncResult.Done
+        assertEquals(100, r.pulled); assertEquals(100, r.skipped)
+        assertEquals(100, repo.libraryIds().size)
+        assertTrue(maxInFlight in 2..8, "lookups ran $maxInFlight at a time")
+        assertEquals(10, repo.recentSyncEvents(500).count { it.action.startsWith("skipped") })
+    }
+}
