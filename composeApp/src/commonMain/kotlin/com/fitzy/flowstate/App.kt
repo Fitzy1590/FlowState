@@ -27,6 +27,7 @@ fun App(container: AppContainer) {
     LaunchedEffect(container) {
         container.home.load()
         container.discover.load()
+        container.sync.syncIfConnected()
     }
     FlowStateTheme {
         Scaffold(
@@ -52,7 +53,7 @@ fun App(container: AppContainer) {
                         detail = container.detailFor(c).also { it.load() } to eps
                     })
                     Tab.Discover -> DiscoverRoute(container.discover)
-                    Tab.Settings -> SettingsRoute(container.settings)
+                    Tab.Settings -> SettingsRoute(container.settings, container.sync)
                 }
             }
         }

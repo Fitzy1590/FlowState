@@ -10,7 +10,11 @@ import com.fitzy.flowstate.data.ai.ClaudeSummarizer
 import com.fitzy.flowstate.data.ai.Summarizer
 import com.fitzy.flowstate.data.youtube.YoutubeClient
 import com.fitzy.flowstate.domain.Candidate
+import com.fitzy.flowstate.data.tmdb.TmdbClient
 import com.fitzy.flowstate.presenter.EpisodesPresenter
+import com.fitzy.flowstate.presenter.SyncPresenter
+import com.fitzy.flowstate.sync.StremioApi
+import com.fitzy.flowstate.sync.StremioSync
 import com.fitzy.flowstate.secrets.SecretNames
 import com.fitzy.flowstate.links.LinkLauncher
 import com.fitzy.flowstate.presenter.DetailPresenter
@@ -40,6 +44,17 @@ class AppContainer(
     private val claude = ClaudeClient(http, apiKey = { secrets.get(SecretNames.CLAUDE) })
     private val summarizer: Summarizer = ClaudeSummarizer(claude)
     private val youtube = YoutubeClient(http, apiKey = { secrets.get(SecretNames.YOUTUBE) })
+
+    private val stremioSync = StremioSync(
+        StremioApi(http), repository,
+        resolver = { imdb -> secrets.get(SecretNames.TMDB)?.let { t -> runCatching { TmdbClient(http, apiKey = { t }).findByImdb(imdb) }.getOrNull() } },
+        authKey = { secrets.get(SecretNames.STREMIO_AUTH) },
+        clock = clock,
+    )
+    val sync = SyncPresenter(secrets, StremioApi(http), stremioSync, repository, scope) {
+        home.load()
+        discover.load()
+    }
 
     fun episodesFor(c: Candidate) = EpisodesPresenter(c, repository, catalog, summarizer, youtube, launcher, scope)
 

@@ -66,6 +66,16 @@ CREATE TABLE EpisodeSummary (
     PRIMARY KEY (tmdbId, season, episode, lang)
 );
 
+CREATE TABLE SyncEvent (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at INTEGER NOT NULL,
+    service TEXT NOT NULL,
+    item TEXT NOT NULL,
+    action TEXT NOT NULL,
+    localTs INTEGER,
+    remoteTs INTEGER
+);
+
 insertLibraryIfMissing:
 INSERT OR IGNORE INTO LibraryItem(type, tmdbId, name, year, posterPath, imdbId, genres, status, completion, abandoned, addedAt, lastActivityAt)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
@@ -124,3 +134,12 @@ INSERT OR REPLACE INTO EpisodeSummary(tmdbId, season, episode, lang, promptVersi
 
 selectSummary:
 SELECT text, promptVersion FROM EpisodeSummary WHERE tmdbId = ? AND season = ? AND episode = ? AND lang = ?;
+
+insertSyncEvent:
+INSERT INTO SyncEvent(at, service, item, action, localTs, remoteTs) VALUES (?, ?, ?, ?, ?, ?);
+
+selectRecentSyncEvents:
+SELECT * FROM SyncEvent ORDER BY id DESC LIMIT ?;
+
+updateProgressAt:
+UPDATE LibraryItem SET status = ?, completion = ?, abandoned = 0, lastActivityAt = ? WHERE type = ? AND tmdbId = ?;

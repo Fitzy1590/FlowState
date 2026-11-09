@@ -83,6 +83,15 @@ class TmdbClient(
         return v.bestTrailerKey()
     }
 
+    /** Looks a title up by IMDb id (TMDB find endpoint). Not yet checked against the live API. */
+    suspend fun findByImdb(imdbId: String): TmdbTitle? {
+        val resp: FindResponse = http.get("$baseUrl/find/$imdbId") {
+            authorize()
+            parameter("external_source", "imdb_id")
+        }.body()
+        return resp.movieResults.firstOrNull()?.toTitle(MediaType.MOVIE) ?: resp.tvResults.firstOrNull()?.toTitle(MediaType.SHOW)
+    }
+
     private suspend fun list(
         url: String,
         fallback: MediaType?,

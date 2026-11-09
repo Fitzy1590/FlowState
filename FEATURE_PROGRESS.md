@@ -21,10 +21,10 @@ Posters: TMDB primary, Metahub fallback.
 | 3a | Stremio deep link | S1+S2 done (link builder, "Play in Stremio" button, launchers); real device launch todo | URI builder tests; manual launch on device |
 | 3b | Nuvio deep link (`nuvio://meta?...`) | S1+S2 done (matches Nuvio source; "Open in Nuvio" button); device launch todo | URI builder tests; manual launch |
 | 3c | Default player + next unwatched + no-app prompt | todo | next-episode logic tests |
-| 4a | Stremio sync | todo | conflict-resolution tests; sandbox account run |
-| 4b | Nuvio sync (read Nuvio sync code first) | todo | same as 4a |
+| 4a | Stremio sync | S1+S2 done (movies two-way, shows pull-only; login, Sync now, sync at launch); never run against a real Stremio account | conflict-resolution tests; sandbox account run |
+| 4b | Nuvio sync | BLOCKED: Nuvio uses a private Supabase backend (see SPEC 4). Proposed: Trakt bridge | same as 4a |
 | 4c | Background workers (WorkManager, desktop scheduler) | todo | worker runs on emulator; scheduler test |
-| 4e | Conflict log + force pull/push | todo | log rows match test conflicts |
+| 4e | Conflict log + force pull/push | partly: sync log stored and last 5 shown in Settings; force pull/push not built | log rows match test conflicts |
 | 4g | Export/import backup | todo | round-trip test |
 | 4h | Encrypted credential storage | S1 done (store, Android Keystore AES-GCM, Windows DPAPI, Settings screen); on-device and on-Windows check todo | secrets never in plain prefs/logs |
 | 5a | Launch update check | todo | version-compare tests; skipped version persists |
@@ -47,6 +47,9 @@ Posters: TMDB primary, Metahub fallback.
 
 ## Detail page (first pass)
 Tap a poster on Home to open it. Two panes when wide (poster, actions left; overview right), one column when narrow; Esc or Back returns. Actions: Play in Stremio, Open in Nuvio, Watch trailer, Add to library, Rate 0-100. Episodes tab built (shows only): season chips, watched checkboxes that drive library progress, per-episode "Summary", "Catch me up", season trailer and recap buttons; unwatched episodes show no description. Not built yet: Cast / Similar tabs, IMDb and Rotten Tomatoes badges, season trailer and recap, AI episode summaries, default-player setting and next-episode logic (3c). Screen not yet seen rendered (no way to click in the headless run).
+
+## Sync (first pass)
+`SyncEngine` (latest activity wins, equal = no change, no deletes), `StremioApi`, `StremioSync`, `SyncPresenter`, Stremio section in Settings. Not built: background workers (4c: WorkManager / desktop scheduler; sync currently runs at launch and on Sync now), decoding the show watched bitfield, Trakt bridge.
 
 ## Open items
 - Verify every **[verify]** item in `SPEC.md` before coding it.

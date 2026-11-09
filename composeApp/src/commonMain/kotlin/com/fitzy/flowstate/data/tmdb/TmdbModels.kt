@@ -9,6 +9,12 @@ import kotlinx.serialization.Serializable
 internal data class ListResponse(val results: List<ResultDto> = emptyList())
 
 @Serializable
+internal data class FindResponse(
+    @SerialName("movie_results") val movieResults: List<ResultDto> = emptyList(),
+    @SerialName("tv_results") val tvResults: List<ResultDto> = emptyList(),
+)
+
+@Serializable
 internal data class ResultDto(
     val id: Long,
     @SerialName("media_type") val mediaType: String? = null,

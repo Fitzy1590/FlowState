@@ -11,17 +11,28 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.fitzy.flowstate.presenter.SettingsPresenter
+import com.fitzy.flowstate.presenter.SyncPresenter
 import com.fitzy.flowstate.presenter.SettingsState
+import com.fitzy.flowstate.presenter.SyncState
 import com.fitzy.flowstate.secrets.SecretNames
 
 @Composable
-fun SettingsRoute(presenter: SettingsPresenter) {
+fun SettingsRoute(presenter: SettingsPresenter, sync: SyncPresenter) {
     val state by presenter.state.collectAsState()
-    SettingsScreen(state, presenter::save, presenter::clear)
+    val syncState by sync.state.collectAsState()
+    SettingsScreen(state, presenter::save, presenter::clear, syncState, sync::login, sync::syncNow, sync::logout)
 }
 
 @Composable
-fun SettingsScreen(state: SettingsState, onSave: (String, String) -> Boolean, onClear: (String) -> Unit) {
+fun SettingsScreen(
+    state: SettingsState,
+    onSave: (String, String) -> Boolean,
+    onClear: (String) -> Unit,
+    sync: SyncState = SyncState(),
+    onLogin: (String, String) -> Unit = { _, _ -> },
+    onSync: () -> Unit = {},
+    onLogout: () -> Unit = {},
+) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -31,6 +42,7 @@ fun SettingsScreen(state: SettingsState, onSave: (String, String) -> Boolean, on
         KeyField("TMDB read access token", "Needed for real posters and recommendations. Use the long v4 token.", SecretNames.TMDB, state.tmdbSet, onSave, onClear)
         KeyField("Claude API key", "Needed for AI search and episode summaries.", SecretNames.CLAUDE, state.claudeSet, onSave, onClear)
         KeyField("YouTube Data API key", "Optional. Lets season recaps open the top result.", SecretNames.YOUTUBE, state.youtubeSet, onSave, onClear)
+        StremioSection(sync, onLogin, onSync, onLogout)
         Text("About", style = MaterialTheme.typography.titleMedium)
         Text(
             "This product uses the TMDB API but is not endorsed or certified by TMDB.",
@@ -66,5 +78,33 @@ private fun KeyField(
             Button(onClick = { if (onSave(name, text)) text = "" }, enabled = text.isNotBlank()) { Text("Save") }
             if (isSet) OutlinedButton(onClick = { onClear(name) }) { Text("Remove") }
         }
+    }
+}
+
+@Composable
+private fun StremioSection(sync: SyncState, onLogin: (String, String) -> Unit, onSync: () -> Unit, onLogout: () -> Unit) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("Stremio account", style = MaterialTheme.typography.titleMedium)
+        Text("Syncs movie progress both ways, latest activity wins. Shows are pulled only. Your password is not stored.", style = MaterialTheme.typography.bodySmall)
+        if (sync.connected) {
+            Text("Connected", color = MaterialTheme.colorScheme.primary)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onSync, enabled = !sync.busy) { Text(if (sync.busy) "Syncing" else "Sync now") }
+                OutlinedButton(onClick = onLogout) { Text("Disconnect") }
+            }
+        } else {
+            OutlinedTextField(email, { email = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Email") })
+            OutlinedTextField(
+                password, { password = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Password") },
+                visualTransformation = PasswordVisualTransformation(),
+            )
+            Button(onClick = { onLogin(email, password); password = "" }, enabled = email.isNotBlank() && password.isNotBlank() && !sync.busy) {
+                Text(if (sync.busy) "Connecting" else "Connect")
+            }
+        }
+        sync.message?.let { Text(it) }
+        sync.log.take(5).forEach { Text("${it.action}: ${it.item}", style = MaterialTheme.typography.bodySmall) }
     }
 }

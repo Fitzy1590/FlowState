@@ -10,6 +10,17 @@ enum class LibraryStatus { PLANNED, WATCHING, COMPLETED, DROPPED }
 
 enum class ActorPref { LIKED, DISLIKED }
 
+data class LocalSyncRow(
+    val id: TitleId,
+    val name: String,
+    val imdbId: String,
+    val status: LibraryStatus,
+    val completion: Double,
+    val lastActivityAt: Long,
+)
+
+data class SyncLogLine(val at: Long, val service: String, val item: String, val action: String, val localTs: Long?, val remoteTs: Long?)
+
 data class LibraryEntry(
     val id: TitleId,
     val name: String,
@@ -50,6 +61,28 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
         ?.let {
             LibraryEntry(TitleId(MediaType.valueOf(it.type), it.tmdbId), it.name, it.year?.toInt(), it.posterPath, it.completion, it.lastActivityAt)
         }
+
+    /** Library rows that have an IMDb id, for syncing. */
+    fun syncCandidates(): List<LocalSyncRow> = q.selectLibrary().executeAsList()
+        .filter { !it.imdbId.isNullOrBlank() }
+        .map {
+            LocalSyncRow(
+                TitleId(MediaType.valueOf(it.type), it.tmdbId), it.name, it.imdbId!!,
+                LibraryStatus.valueOf(it.status), it.completion, it.lastActivityAt,
+            )
+        }
+
+    /** Sets progress with an explicit activity time, so a pulled change is not mistaken for a newer local one. */
+    fun setProgressAt(id: TitleId, status: LibraryStatus, completion: Double, activityAt: Long) {
+        require(completion in 0.0..1.0) { "completion must be 0..1" }
+        q.updateProgressAt(status.name, completion, activityAt, id.type.name, id.tmdbId)
+    }
+
+    fun logSync(service: String, item: String, action: String, localTs: Long?, remoteTs: Long?) =
+        q.insertSyncEvent(clock(), service, item, action, localTs, remoteTs)
+
+    fun recentSyncEvents(limit: Int = 20): List<SyncLogLine> =
+        q.selectRecentSyncEvents(limit.toLong()).executeAsList().map { SyncLogLine(it.at, it.service, it.item, it.action, it.localTs, it.remoteTs) }
 
     fun libraryStatus(id: TitleId): String? =
         q.selectLibrary().executeAsList().firstOrNull { it.type == id.type.name && it.tmdbId == id.tmdbId }?.status
