@@ -10,7 +10,7 @@ Posters: TMDB primary, Metahub fallback.
 ## Backlog
 | ID | Feature | Stage | Verify by |
 |---|---|---|---|
-| S0 | Gradle KMP project, targets android + desktop, CI, version catalog | todo | `./gradlew check` green |
+| S0 | Gradle KMP project, targets android + desktop, CI, version catalog | done | `./gradlew check :composeApp:assembleDebug` green (Android + desktop tests, lint). `packageMsi` untested (needs Windows) |
 | 1a | Rule-based recommender | todo | unit tests on scoring fixtures |
 | 1b | Liked/disliked actors, soft penalty | todo | tests: caps +0.20 / -0.30, title never removed |
 | 1c | Similar Shows/Movies tab | todo | detail page shows TMDB similar, de-duplicated |
@@ -44,3 +44,8 @@ Posters: TMDB primary, Metahub fallback.
 - Verify every **[verify]** item in `SPEC.md` before coding it.
 - Read Nuvio sync code (`NuvioMedia/NuvioMobile`) to spec 4b.
 - Decide secret handling for the Claude API key (user-supplied for now).
+
+## Environment notes
+- Android SDK is not preinstalled in cloud sessions. Install cmdline-tools from `dl.google.com`, then `platforms;android-35` and `build-tools;35.0.0`, and write `sdk.dir` to `local.properties` (gitignored).
+- Cloud environment `flowstate` allows `dl.google.com` and `maven.google.com`. Maven Central can answer 429 under parallel load: use `--max-workers=1 --no-parallel` and retry.
+- CI uses `android-actions/setup-android`.
