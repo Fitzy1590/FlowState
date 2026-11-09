@@ -12,8 +12,14 @@ import com.fitzy.flowstate.reco.Recommender
 import kotlinx.coroutines.CoroutineScope
 
 /** Wires the shared layer. Each platform entry point supplies a driver, a clock and a scope. */
-class AppContainer(driver: SqlDriver, scope: CoroutineScope, clock: () -> Long, catalog: Catalog = SampleCatalog()) {
+class AppContainer(
+    driver: SqlDriver,
+    scope: CoroutineScope,
+    clock: () -> Long,
+    catalogFactory: (FlowRepository) -> Catalog = { SampleCatalog() },
+) {
     val repository = FlowRepository(FlowDatabase(driver), clock)
+    private val catalog = catalogFactory(repository)
     private val recommender = Recommender(currentYear = yearOf(clock()))
     val home = HomePresenter(repository, catalog, recommender, InterestPrompter(), scope, clock)
     val discover = DiscoverPresenter(repository, catalog, recommender, scope)

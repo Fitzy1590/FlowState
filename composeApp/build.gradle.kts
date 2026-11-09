@@ -37,12 +37,14 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.tv.material)
             implementation(libs.sqldelight.android.driver)
+            implementation(libs.ktor.client.okhttp)
         }
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.kotlinx.coroutines.swing)
                 implementation(libs.sqldelight.sqlite.driver)
+                implementation(libs.ktor.client.okhttp)
             }
         }
     }

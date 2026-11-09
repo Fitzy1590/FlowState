@@ -6,6 +6,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -17,6 +18,7 @@ fun HttpClient.withTmdbJson(): HttpClient = config {
 
 /**
  * TMDB v3 client. [apiKey] is read per request so it can come from encrypted storage.
+ * A long credential (the v4 read access token) is sent as a Bearer header; a short one (the v3 key) as `api_key`.
  * Response shapes follow TMDB's public docs from memory and are not yet checked against live data.
  */
 class TmdbClient(
@@ -26,6 +28,9 @@ class TmdbClient(
 ) {
     suspend fun search(query: String): List<TmdbTitle> =
         list("$baseUrl/search/multi", null) { parameter("query", query) }
+
+    suspend fun popular(type: MediaType): List<TmdbTitle> =
+        list("$baseUrl/${type.path()}/popular", type)
 
     suspend fun similar(id: TitleId): List<TmdbTitle> =
         list("$baseUrl/${id.type.path()}/${id.tmdbId}/similar", id.type)
@@ -45,7 +50,7 @@ class TmdbClient(
 
     suspend fun details(id: TitleId): TmdbDetails {
         val dto: DetailsDto = http.get("$baseUrl/${id.type.path()}/${id.tmdbId}") {
-            parameter("api_key", apiKey())
+            authorize()
             parameter("append_to_response", "credits,keywords,videos,external_ids")
         }.body()
         val date = dto.releaseDate ?: dto.firstAirDate
@@ -71,11 +76,22 @@ class TmdbClient(
         extra: io.ktor.client.request.HttpRequestBuilder.() -> Unit = {},
     ): List<TmdbTitle> {
         val resp: ListResponse = http.get(url) {
-            parameter("api_key", apiKey())
+            authorize()
             extra()
         }.body()
         return resp.results.mapNotNull { it.toTitle(fallback) }
     }
 
+    private fun io.ktor.client.request.HttpRequestBuilder.authorize() {
+        val credential = apiKey()
+        if (credential.length > BEARER_MIN_LENGTH) header("Authorization", "Bearer $credential")
+        else parameter("api_key", credential)
+    }
+
     private fun MediaType.path() = if (this == MediaType.MOVIE) "movie" else "tv"
+
+    private companion object {
+        /** v3 keys are 32 characters; v4 tokens are JWTs of 100+ characters. */
+        const val BEARER_MIN_LENGTH = 40
+    }
 }
