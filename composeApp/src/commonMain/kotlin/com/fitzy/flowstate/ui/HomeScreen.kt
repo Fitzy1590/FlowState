@@ -18,24 +18,24 @@ import com.fitzy.flowstate.presenter.HomePresenter
 import com.fitzy.flowstate.presenter.HomeState
 
 @Composable
-fun HomeRoute(presenter: HomePresenter) {
+fun HomeRoute(presenter: HomePresenter, onOpen: (Candidate) -> Unit) {
     val state by presenter.state.collectAsState()
-    HomeScreen(state, onAnswer = presenter::answerPrompt, onDismiss = presenter::dismissPrompt)
+    HomeScreen(state, onAnswer = presenter::answerPrompt, onDismiss = presenter::dismissPrompt, onOpen = onOpen)
 }
 
 @Composable
-fun HomeScreen(state: HomeState, onAnswer: (Vote) -> Unit, onDismiss: () -> Unit) {
+fun HomeScreen(state: HomeState, onAnswer: (Vote) -> Unit, onDismiss: () -> Unit, onOpen: (Candidate) -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item { Hero(state.hero) }
-        state.prompt?.let { item { InterestCard(it, onAnswer, onDismiss) } }
+        state.prompt?.let { item { InterestCard(it, onAnswer, onDismiss, onOpen) } }
         item { Text("Recommended for you", style = MaterialTheme.typography.titleLarge) }
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(state.recommended, key = { "${it.id.type}-${it.id.tmdbId}" }) { PosterCard(it, Modifier.width(140.dp)) }
+                items(state.recommended, key = { "${it.id.type}-${it.id.tmdbId}" }) { c -> PosterCard(c, Modifier.width(140.dp), onClick = { onOpen(c) }) }
             }
         }
     }
@@ -58,10 +58,10 @@ private fun Hero(entry: LibraryEntry?) {
 }
 
 @Composable
-fun InterestCard(c: Candidate, onAnswer: (Vote) -> Unit, onDismiss: () -> Unit) {
+fun InterestCard(c: Candidate, onAnswer: (Vote) -> Unit, onDismiss: () -> Unit, onOpen: (Candidate) -> Unit) {
     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
-            PosterCard(c, Modifier.width(84.dp))
+            PosterCard(c, Modifier.width(84.dp), onClick = { onOpen(c) })
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Would this interest you?", color = MaterialTheme.colorScheme.primary)
                 Text("${c.name}${c.year?.let { " ($it)" } ?: ""}", style = MaterialTheme.typography.titleMedium)

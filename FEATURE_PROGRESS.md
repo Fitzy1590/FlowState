@@ -16,10 +16,10 @@ Posters: TMDB primary, Metahub fallback.
 | 1c | Similar Shows/Movies tab | todo | detail page shows TMDB similar, de-duplicated |
 | 1e | Trakt / MDBList lists as sources | todo | list import test with recorded JSON |
 | 1f | Add to watchlist from recommendations | S1 done (`quickAdd`); UI todo | card action writes local library |
-| 2a | 0-100 rating modal | S1 done (stored 0..100, range checked); modal UI todo | persists 0..100, rejects out of range |
+| 2a | 0-100 rating modal | S1 done (stored 0..100, range checked); modal built on the detail page (slider + number box), not yet seen on screen | persists 0..100, rejects out of range |
 | 2b | IMDb / RT badges, Letterboxd link | todo | OMDb parse test, badge hidden when absent |
-| 3a | Stremio deep link | todo | URI builder tests; manual launch on device |
-| 3b | Nuvio deep link (`nuvio://meta?...`) | todo | URI builder tests; manual launch |
+| 3a | Stremio deep link | S1+S2 done (link builder, "Play in Stremio" button, launchers); real device launch todo | URI builder tests; manual launch on device |
+| 3b | Nuvio deep link (`nuvio://meta?...`) | S1+S2 done (matches Nuvio source; "Open in Nuvio" button); device launch todo | URI builder tests; manual launch |
 | 3c | Default player + next unwatched + no-app prompt | todo | next-episode logic tests |
 | 4a | Stremio sync | todo | conflict-resolution tests; sandbox account run |
 | 4b | Nuvio sync (read Nuvio sync code first) | todo | same as 4a |
@@ -35,7 +35,7 @@ Posters: TMDB primary, Metahub fallback.
 | 6c | Android TV UI | todo | D-pad walkthrough, focus restore works |
 | 6e | New-episode notifications | todo | notification fires on test episode |
 | 6f | Upcoming calendar | todo | shows unwatched upcoming episodes |
-| 7a | Watch Trailer button (TMDB video, YouTube link) | todo | link builder tests; no-trailer fallback |
+| 7a | Watch Trailer button (TMDB video, YouTube link) | S1+S2 done (uses TMDB trailer key, falls back to YouTube search); autoplay depends on YouTube app/browser | link builder tests; no-trailer fallback |
 | 7b | Season trailer (next season after finished) | todo | visibility logic tests |
 | 7c | Season recap (YouTube search) | todo | with key opens top result; without key opens search |
 | 7d | AI episode summaries + season catch-up | todo | no summary for unwatched episodes; cache hit test |
@@ -44,6 +44,9 @@ Posters: TMDB primary, Metahub fallback.
 | 8c | AI search (text, structured query -> TMDB) | todo | parsed-query tests for both example prompts; no invented titles |
 | 8d | Voice input on Android and TV | todo | permission flow; speech text reaches search; device test |
 | 8e | Windows voice (v1 hint, v2 Vosk) | todo | v1: hint shown; v2: offline recognition test |
+
+## Detail page (first pass)
+Tap a poster on Home to open it. Two panes when wide (poster, actions left; overview right), one column when narrow; Esc or Back returns. Actions: Play in Stremio, Open in Nuvio, Watch trailer, Add to library, Rate 0-100. Not built yet: Episodes / Cast / Similar tabs, IMDb and Rotten Tomatoes badges, season trailer and recap, AI episode summaries, default-player setting and next-episode logic (3c). Screen not yet seen rendered (no way to click in the headless run).
 
 ## Open items
 - Verify every **[verify]** item in `SPEC.md` before coding it.

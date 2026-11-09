@@ -28,9 +28,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val driver = AndroidSqliteDriver(FlowDatabase.Schema, applicationContext, "flowstate.db")
         val container = AppContainer(
-            driver, scope, clock = System::currentTimeMillis,
+            driver, clock = System::currentTimeMillis,
             secrets = androidSecretStore(applicationContext),
             http = HttpClient(OkHttp).withTmdbJson(),
+            launcher = AndroidLinkLauncher(this),
+            scope = scope,
         )
         setContent {
             setSingletonImageLoaderFactory { context ->

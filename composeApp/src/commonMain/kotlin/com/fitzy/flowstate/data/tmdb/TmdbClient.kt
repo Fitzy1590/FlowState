@@ -67,6 +67,7 @@ class TmdbClient(
             cast = dto.credits?.cast?.sortedBy { it.order }?.map { it.id } ?: emptyList(),
             keywords = dto.keywords?.let { (it.keywords + it.results).map { k -> k.id }.toSet() } ?: emptySet(),
             trailerKey = dto.videos?.bestTrailerKey(),
+            overview = dto.overview.orEmpty(),
         )
     }
 

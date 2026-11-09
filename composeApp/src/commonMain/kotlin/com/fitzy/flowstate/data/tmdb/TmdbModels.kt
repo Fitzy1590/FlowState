@@ -31,6 +31,7 @@ internal data class DetailsDto(
     @SerialName("poster_path") val posterPath: String? = null,
     val genres: List<IdName> = emptyList(),
     @SerialName("vote_average") val voteAverage: Double = 0.0,
+    val overview: String? = null,
     @SerialName("imdb_id") val imdbId: String? = null,
     @SerialName("external_ids") val externalIds: ExternalIds? = null,
     val credits: Credits? = null,
@@ -79,6 +80,7 @@ data class TmdbDetails(
     val keywords: Set<Int>,
     /** YouTube key of the best trailer, if any. */
     val trailerKey: String?,
+    val overview: String = "",
 )
 
 data class DiscoverQuery(

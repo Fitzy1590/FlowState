@@ -32,6 +32,8 @@ class TmdbCatalog(
         return fresh
     }
 
+    override suspend fun details(id: TitleId): TmdbDetails? = detailsFor(id)
+
     private suspend fun build(): List<Candidate> {
         val popular = MediaType.entries.flatMap { client.popular(it) }
 

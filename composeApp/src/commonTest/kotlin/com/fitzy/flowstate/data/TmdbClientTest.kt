@@ -69,7 +69,7 @@ class TmdbClientTest {
     @Test fun detailsParsesCastKeywordsImdbAndBestTrailer() = runTest {
         val c = client(
             """{"id":4613,"name":"Band of Brothers","first_air_date":"2001-09-09","genres":[{"id":10768,"name":"War"}],
-              "vote_average":8.5,"external_ids":{"imdb_id":"tt0185906"},
+              "vote_average":8.5,"overview":"Easy Company.","external_ids":{"imdb_id":"tt0185906"},
               "credits":{"cast":[{"id":2,"order":1},{"id":1,"order":0}]},
               "keywords":{"results":[{"id":5,"name":"wwii"}]},
               "videos":{"results":[
@@ -83,6 +83,7 @@ class TmdbClientTest {
         assertEquals(setOf(5), d.keywords)
         assertEquals("best", d.trailerKey)
         assertEquals(2001, d.title.year)
+        assertEquals("Easy Company.", d.overview)
     }
 
     @Test fun detailsMovieKeywordsAndTopLevelImdb() = runTest {

@@ -1,5 +1,7 @@
 package com.fitzy.flowstate.data
 
+import com.fitzy.flowstate.data.tmdb.TmdbDetails
+import com.fitzy.flowstate.data.tmdb.TmdbTitle
 import com.fitzy.flowstate.domain.Candidate
 import com.fitzy.flowstate.domain.MediaType
 import com.fitzy.flowstate.domain.TitleId
@@ -9,25 +11,34 @@ import com.fitzy.flowstate.domain.TitleId
  * Ids, years and genre ids are from memory and not checked against TMDB. Replace with a TMDB-backed Catalog.
  */
 class SampleCatalog : Catalog {
-    private fun m(id: Long, name: String, year: Int, vote: Double, vararg genres: Int) =
-        Candidate(TitleId(MediaType.MOVIE, id), name, year, genres.toSet(), voteAverage = vote)
+    private fun m(id: Long, imdb: String, name: String, year: Int, vote: Double, vararg genres: Int) =
+        Candidate(TitleId(MediaType.MOVIE, id), name, year, genres.toSet(), voteAverage = vote, imdbId = imdb)
 
-    private fun s(id: Long, name: String, year: Int, vote: Double, vararg genres: Int) =
-        Candidate(TitleId(MediaType.SHOW, id), name, year, genres.toSet(), voteAverage = vote)
+    private fun s(id: Long, imdb: String, name: String, year: Int, vote: Double, vararg genres: Int) =
+        Candidate(TitleId(MediaType.SHOW, id), name, year, genres.toSet(), voteAverage = vote, imdbId = imdb)
 
-    override suspend fun pool(): List<Candidate> = listOf(
-        m(857, "Saving Private Ryan", 1998, 8.2, 18, 10752),
-        s(4613, "Band of Brothers", 2001, 8.5, 18, 10768),
-        m(228150, "Fury", 2014, 7.5, 28, 18, 10752),
-        m(374720, "Dunkirk", 2017, 7.4, 28, 18, 10752),
-        m(28, "Apocalypse Now", 1979, 8.3, 18, 10752),
-        s(1396, "Breaking Bad", 2008, 8.9, 18, 80),
-        m(238, "The Godfather", 1972, 8.7, 18, 80),
-        m(680, "Pulp Fiction", 1994, 8.5, 80, 53),
-        m(27205, "Inception", 2010, 8.4, 28, 878, 12),
-        m(438631, "Dune", 2021, 7.8, 878, 12),
-        s(1399, "Game of Thrones", 2011, 8.4, 10765, 18),
-        s(60622, "Fargo", 2014, 8.3, 80, 18),
-        m(496243, "Parasite", 2019, 8.5, 35, 53, 18),
+    override suspend fun pool(): List<Candidate> = all
+
+    override suspend fun details(id: TitleId): TmdbDetails? = all.firstOrNull { it.id == id }?.let {
+        TmdbDetails(
+            TmdbTitle(it.id, it.name, it.year, it.posterPath, it.genres, it.voteAverage),
+            imdbId = it.imdbId, cast = emptyList(), keywords = emptySet(), trailerKey = null,
+        )
+    }
+
+    private val all = listOf(
+        m(857, "tt0120815", "Saving Private Ryan", 1998, 8.2, 18, 10752),
+        s(4613, "tt0185906", "Band of Brothers", 2001, 8.5, 18, 10768),
+        m(228150, "tt2713180", "Fury", 2014, 7.5, 28, 18, 10752),
+        m(374720, "tt5013056", "Dunkirk", 2017, 7.4, 28, 18, 10752),
+        m(28, "tt0078788", "Apocalypse Now", 1979, 8.3, 18, 10752),
+        s(1396, "tt0903747", "Breaking Bad", 2008, 8.9, 18, 80),
+        m(238, "tt0068646", "The Godfather", 1972, 8.7, 18, 80),
+        m(680, "tt0110912", "Pulp Fiction", 1994, 8.5, 80, 53),
+        m(27205, "tt1375666", "Inception", 2010, 8.4, 28, 878, 12),
+        m(438631, "tt1160419", "Dune", 2021, 7.8, 878, 12),
+        s(1399, "tt0944947", "Game of Thrones", 2011, 8.4, 10765, 18),
+        s(60622, "tt2802850", "Fargo", 2014, 8.3, 80, 18),
+        m(496243, "tt6751668", "Parasite", 2019, 8.5, 35, 53, 18),
     )
 }

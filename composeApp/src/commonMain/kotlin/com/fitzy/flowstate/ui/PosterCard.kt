@@ -1,6 +1,7 @@
 package com.fitzy.flowstate.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,7 +26,7 @@ import com.fitzy.flowstate.domain.Candidate
  * (or the title has no poster data) the placeholder with the title stays.
  */
 @Composable
-fun PosterCard(c: Candidate, modifier: Modifier = Modifier) {
+fun PosterCard(c: Candidate, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
     val hue = (c.id.tmdbId % 360).toInt()
     val urls = remember(c.posterPath, c.imdbId) { PosterUrls.candidates(c.posterPath, c.imdbId) }
     var attempt by remember(urls) { mutableIntStateOf(0) }
@@ -34,6 +35,7 @@ fun PosterCard(c: Candidate, modifier: Modifier = Modifier) {
         modifier = modifier
             .aspectRatio(2f / 3f)
             .clip(RoundedCornerShape(8.dp))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .background(Color.hsv(hue.toFloat(), 0.35f, 0.38f)),
         contentAlignment = Alignment.Center,
     ) {

@@ -2,6 +2,7 @@ package com.fitzy.flowstate.data
 
 import com.fitzy.flowstate.data.tmdb.TmdbCatalog
 import com.fitzy.flowstate.data.tmdb.TmdbClient
+import com.fitzy.flowstate.data.tmdb.TmdbDetails
 import com.fitzy.flowstate.domain.Candidate
 import com.fitzy.flowstate.domain.TitleId
 import com.fitzy.flowstate.secrets.SecretNames
@@ -23,17 +24,21 @@ class SecretAwareCatalog(
     private var token: String? = null
     private var delegate: Catalog? = null
 
-    override suspend fun pool(): List<Candidate> {
+    override suspend fun pool(): List<Candidate> = current().pool()
+
+    override suspend fun details(id: TitleId): TmdbDetails? = current().details(id)
+
+    private fun current(): Catalog {
         val t = secrets.get(SecretNames.TMDB)?.takeIf { it.isNotBlank() }
         if (t == null) {
             token = null
             delegate = null
-            return fallback.pool()
+            return fallback
         }
         if (t != token) {
             token = t
             delegate = TmdbCatalog(TmdbClient(http, apiKey = { t }), seeds, clock)
         }
-        return delegate!!.pool()
+        return delegate!!
     }
 }

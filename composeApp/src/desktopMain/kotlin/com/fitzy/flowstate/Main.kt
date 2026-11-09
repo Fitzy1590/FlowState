@@ -43,7 +43,7 @@ fun main() = application {
             .build()
     }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    val container = AppContainer(createDriver(), scope, clock = System::currentTimeMillis, secrets = desktopSecretStore(dataDir()), http = HttpClient(OkHttp).withTmdbJson())
+    val container = AppContainer(createDriver(), clock = System::currentTimeMillis, secrets = desktopSecretStore(dataDir()), http = HttpClient(OkHttp).withTmdbJson(), launcher = DesktopLinkLauncher(), scope = scope)
     Window(
         onCloseRequest = ::exitApplication,
         title = "FlowState",
