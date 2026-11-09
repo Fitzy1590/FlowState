@@ -10,6 +10,8 @@ enum class LibraryStatus { PLANNED, WATCHING, COMPLETED, DROPPED }
 
 enum class ActorPref { LIKED, DISLIKED }
 
+data class LibraryItemView(val candidate: Candidate, val status: LibraryStatus, val completion: Double)
+
 data class LocalSyncRow(
     val id: TitleId,
     val name: String,
@@ -83,6 +85,19 @@ class FlowRepository(private val db: FlowDatabase, private val clock: () -> Long
 
     fun recentSyncEvents(limit: Int = 20): List<SyncLogLine> =
         q.selectRecentSyncEvents(limit.toLong()).executeAsList().map { SyncLogLine(it.at, it.service, it.item, it.action, it.localTs, it.remoteTs) }
+
+    /** The whole library, most recently active first, as candidates that can open a detail page. */
+    fun libraryItems(): List<LibraryItemView> = q.selectLibrary().executeAsList()
+        .sortedByDescending { it.lastActivityAt }
+        .map {
+            LibraryItemView(
+                Candidate(
+                    TitleId(MediaType.valueOf(it.type), it.tmdbId), it.name, it.year?.toInt(),
+                    it.genres.ints().toSet(), posterPath = it.posterPath, imdbId = it.imdbId,
+                ),
+                LibraryStatus.valueOf(it.status), it.completion,
+            )
+        }
 
     fun libraryStatus(id: TitleId): String? =
         q.selectLibrary().executeAsList().firstOrNull { it.type == id.type.name && it.tmdbId == id.tmdbId }?.status

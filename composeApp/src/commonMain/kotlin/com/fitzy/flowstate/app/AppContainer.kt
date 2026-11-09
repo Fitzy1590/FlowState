@@ -12,7 +12,12 @@ import com.fitzy.flowstate.data.youtube.YoutubeClient
 import com.fitzy.flowstate.domain.Candidate
 import com.fitzy.flowstate.data.tmdb.TmdbClient
 import com.fitzy.flowstate.presenter.EpisodesPresenter
+import com.fitzy.flowstate.presenter.LibraryPresenter
+import com.fitzy.flowstate.presenter.SearchPresenter
 import com.fitzy.flowstate.presenter.SyncPresenter
+import com.fitzy.flowstate.search.ClaudeQueryInterpreter
+import com.fitzy.flowstate.voice.NoVoiceInput
+import com.fitzy.flowstate.voice.VoiceInput
 import com.fitzy.flowstate.presenter.UpdatePresenter
 import com.fitzy.flowstate.update.UpdateChecker
 import com.fitzy.flowstate.update.UpdateInstaller
@@ -40,6 +45,7 @@ class AppContainer(
     private val scope: CoroutineScope,
     currentVersion: String,
     updateInstaller: UpdateInstaller,
+    voice: VoiceInput = NoVoiceInput,
 ) {
     val repository = FlowRepository(FlowDatabase(driver), clock)
     private val catalog: Catalog = SecretAwareCatalog(secrets, http, seeds = { repository.profile().likedSeeds }, clock = clock)
@@ -64,6 +70,10 @@ class AppContainer(
     val updates = UpdatePresenter(
         UpdateChecker(http, currentVersion, updateInstaller.assetSuffix), updateInstaller, repository, scope, clock, currentVersion,
     )
+
+    private val queryInterpreter = ClaudeQueryInterpreter(claude)
+    val search = SearchPresenter(repository, catalog, queryInterpreter, aiAvailable = { claude.hasKey }, voice = voice, scope = scope)
+    val library = LibraryPresenter(repository)
 
     fun episodesFor(c: Candidate) = EpisodesPresenter(c, repository, catalog, summarizer, youtube, launcher, scope)
 

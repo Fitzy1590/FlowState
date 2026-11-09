@@ -37,6 +37,7 @@ class MainActivity : ComponentActivity() {
             scope = scope,
             currentVersion = version,
             updateInstaller = AndroidUpdateInstaller(applicationContext, http),
+            voice = AndroidVoiceInput(this),
         )
         setContent {
             setSingletonImageLoaderFactory { context ->

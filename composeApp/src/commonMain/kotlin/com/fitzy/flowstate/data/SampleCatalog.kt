@@ -1,5 +1,6 @@
 package com.fitzy.flowstate.data
 
+import com.fitzy.flowstate.data.tmdb.DiscoverQuery
 import com.fitzy.flowstate.data.tmdb.EpisodeInfo
 import com.fitzy.flowstate.data.tmdb.TmdbDetails
 import com.fitzy.flowstate.data.tmdb.TmdbTitle
@@ -25,6 +26,22 @@ class SampleCatalog : Catalog {
             TmdbTitle(it.id, it.name, it.year, it.posterPath, it.genres, it.voteAverage),
             imdbId = it.imdbId, cast = emptyList(), keywords = emptySet(), trailerKey = null,
         )
+    }
+
+    override suspend fun search(query: String): List<Candidate> =
+        all.filter { it.name.contains(query.trim(), ignoreCase = true) }
+
+    override suspend fun discover(type: MediaType, query: DiscoverQuery): List<Candidate> = all
+        .filter { it.id.type == type }
+        .filter { query.genres.isEmpty() || it.genres.any { g -> g in query.genres } }
+        .filter { query.yearFrom == null || (it.year ?: 0) >= query.yearFrom }
+        .filter { query.yearTo == null || (it.year ?: 9999) <= query.yearTo }
+        .sortedByDescending { it.voteAverage }
+
+    override suspend fun related(id: TitleId): List<Candidate> {
+        val seed = all.firstOrNull { it.id == id } ?: return emptyList()
+        return all.filter { it.id != id && it.genres.any { g -> g in seed.genres } }
+            .sortedByDescending { c -> c.genres.count { it in seed.genres } * 10 + c.voteAverage }
     }
 
     override suspend fun seasonEpisodes(show: TitleId, season: Int): List<EpisodeInfo> = emptyList()

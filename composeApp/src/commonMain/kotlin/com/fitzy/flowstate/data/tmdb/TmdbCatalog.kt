@@ -34,6 +34,19 @@ class TmdbCatalog(
 
     override suspend fun details(id: TitleId): TmdbDetails? = detailsFor(id)
 
+    private fun TmdbTitle.toCandidate() = Candidate(id, name, year, genreIds, voteAverage = voteAverage, posterPath = posterPath)
+
+    override suspend fun search(query: String): List<Candidate> =
+        runCatching { client.search(query).map { it.toCandidate() } }.getOrDefault(emptyList())
+
+    override suspend fun discover(type: MediaType, query: DiscoverQuery): List<Candidate> =
+        runCatching { client.discover(type, query).map { it.toCandidate() } }.getOrDefault(emptyList())
+
+    /** Recommendations first, then similar, without repeats. */
+    override suspend fun related(id: TitleId): List<Candidate> = runCatching {
+        (client.recommendations(id) + client.similar(id)).distinctBy { it.id }.map { it.toCandidate() }
+    }.getOrDefault(emptyList())
+
     override suspend fun seasonEpisodes(show: TitleId, season: Int): List<EpisodeInfo> =
         runCatching { client.seasonEpisodes(show.tmdbId, season) }.getOrDefault(emptyList())
 

@@ -1,10 +1,12 @@
 package com.fitzy.flowstate.data
 
 import com.fitzy.flowstate.data.tmdb.TmdbCatalog
+import com.fitzy.flowstate.data.tmdb.DiscoverQuery
 import com.fitzy.flowstate.data.tmdb.EpisodeInfo
 import com.fitzy.flowstate.data.tmdb.TmdbClient
 import com.fitzy.flowstate.data.tmdb.TmdbDetails
 import com.fitzy.flowstate.domain.Candidate
+import com.fitzy.flowstate.domain.MediaType
 import com.fitzy.flowstate.domain.TitleId
 import com.fitzy.flowstate.secrets.SecretNames
 import com.fitzy.flowstate.secrets.SecretStore
@@ -32,6 +34,12 @@ class SecretAwareCatalog(
     override suspend fun seasonEpisodes(show: TitleId, season: Int): List<EpisodeInfo> = current().seasonEpisodes(show, season)
 
     override suspend fun seasonTrailerKey(show: TitleId, season: Int): String? = current().seasonTrailerKey(show, season)
+
+    override suspend fun search(query: String): List<Candidate> = current().search(query)
+
+    override suspend fun discover(type: MediaType, query: DiscoverQuery): List<Candidate> = current().discover(type, query)
+
+    override suspend fun related(id: TitleId): List<Candidate> = current().related(id)
 
     private fun current(): Catalog {
         val t = secrets.get(SecretNames.TMDB)?.takeIf { it.isNotBlank() }
