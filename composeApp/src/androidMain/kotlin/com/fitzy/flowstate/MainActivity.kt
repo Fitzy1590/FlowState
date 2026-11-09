@@ -5,7 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.fitzy.flowstate.app.AppContainer
+import com.fitzy.flowstate.data.tmdb.withTmdbJson
 import com.fitzy.flowstate.db.FlowDatabase
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -17,7 +20,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val driver = AndroidSqliteDriver(FlowDatabase.Schema, applicationContext, "flowstate.db")
-        val container = AppContainer(driver, scope, clock = System::currentTimeMillis)
+        val container = AppContainer(
+            driver, scope, clock = System::currentTimeMillis,
+            secrets = androidSecretStore(applicationContext),
+            http = HttpClient(OkHttp).withTmdbJson(),
+        )
         setContent { App(container) }
     }
 

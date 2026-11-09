@@ -7,11 +7,6 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.fitzy.flowstate.app.AppContainer
-import com.fitzy.flowstate.data.Catalog
-import com.fitzy.flowstate.data.SampleCatalog
-import com.fitzy.flowstate.data.local.FlowRepository
-import com.fitzy.flowstate.data.tmdb.TmdbCatalog
-import com.fitzy.flowstate.data.tmdb.TmdbClient
 import com.fitzy.flowstate.data.tmdb.withTmdbJson
 import com.fitzy.flowstate.db.FlowDatabase
 import io.ktor.client.HttpClient
@@ -35,19 +30,9 @@ private fun createDriver(): JdbcSqliteDriver {
     return driver
 }
 
-/**
- * DEV ONLY: reads a TMDB token from FLOWSTATE_TMDB_TOKEN. Until encrypted secret storage exists (SPEC 4h),
- * the app uses the built-in sample list when the variable is not set.
- */
-private fun catalogFor(repo: FlowRepository): Catalog {
-    val token = System.getenv("FLOWSTATE_TMDB_TOKEN")?.takeIf { it.isNotBlank() } ?: return SampleCatalog()
-    val client = TmdbClient(HttpClient(OkHttp).withTmdbJson(), apiKey = { token })
-    return TmdbCatalog(client, seeds = { repo.profile().likedSeeds }, clock = System::currentTimeMillis)
-}
-
 fun main() = application {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    val container = AppContainer(createDriver(), scope, clock = System::currentTimeMillis, catalogFactory = ::catalogFor)
+    val container = AppContainer(createDriver(), scope, clock = System::currentTimeMillis, secrets = desktopSecretStore(dataDir()), http = HttpClient(OkHttp).withTmdbJson())
     Window(
         onCloseRequest = ::exitApplication,
         title = "FlowState",

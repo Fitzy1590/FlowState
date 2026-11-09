@@ -26,7 +26,7 @@ Posters: TMDB primary, Metahub fallback.
 | 4c | Background workers (WorkManager, desktop scheduler) | todo | worker runs on emulator; scheduler test |
 | 4e | Conflict log + force pull/push | todo | log rows match test conflicts |
 | 4g | Export/import backup | todo | round-trip test |
-| 4h | Encrypted credential storage | todo | secrets never in plain prefs/logs |
+| 4h | Encrypted credential storage | S1 done (store, Android Keystore AES-GCM, Windows DPAPI, Settings screen); on-device and on-Windows check todo | secrets never in plain prefs/logs |
 | 5a | Launch update check | todo | version-compare tests; skipped version persists |
 | 5b | Settings "Check for Updates" + progress | todo | progress UI test |
 | 5c | Installer wrappers (.apk / .msi) | todo | checksum verify test; manual install |
@@ -59,5 +59,5 @@ Posters: TMDB primary, Metahub fallback.
 - Known gaps: navigation is one shared bottom bar (spec says native per platform); flows use `collectAsState` (CLAUDE.md asks for lifecycle-aware collection on Android); DB calls run on the main thread; posters are colored placeholders (Coil not wired).
 - TMDB response shapes and the Metahub URL are untested against live services (no TMDB key here, `images.metahub.space` is not in the cloud allowlist). Check both before relying on them.
 - `TmdbCatalog` built (recommendations for liked titles, then popular movies/shows; details for the top 30; 6h cache; falls back to the last good pool). Tested on mock responses only. A saved TMDB token on the cloud environment still returned 401 "Invalid API key", so real TMDB response shapes remain UNVERIFIED. Re-save the v4 read access token (starts `eyJ`) and re-run the probe.
-- Desktop reads a dev token from the `FLOWSTATE_TMDB_TOKEN` environment variable and otherwise uses `SampleCatalog`. Android always uses `SampleCatalog` until encrypted secret storage (4h) exists.
-- Next: verify TMDB shapes, secret storage (4h) and a Settings screen for keys, poster loading with Coil, per-platform navigation, then ratings modal (2a) and detail page.
+- Keys (TMDB, Claude, YouTube) are entered in the Settings tab and stored encrypted: Android Keystore on Android, DPAPI on Windows. On Linux dev machines they are memory-only. `SecretAwareCatalog` uses TMDB when a token is saved and `SampleCatalog` otherwise. The Keystore and DPAPI code is untested on a real device or Windows.
+- Next: verify TMDB shapes (the saved cloud credential still gives 401 after re-saving), poster loading with Coil, per-platform navigation, then ratings modal (2a) and detail page.

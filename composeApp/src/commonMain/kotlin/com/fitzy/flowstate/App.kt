@@ -10,8 +10,9 @@ import com.fitzy.flowstate.app.AppContainer
 import com.fitzy.flowstate.theme.FlowStateTheme
 import com.fitzy.flowstate.ui.DiscoverRoute
 import com.fitzy.flowstate.ui.HomeRoute
+import com.fitzy.flowstate.ui.SettingsRoute
 
-private enum class Tab(val label: String) { Home("Home"), Discover("Discover") }
+private enum class Tab(val label: String) { Home("Home"), Discover("Discover"), Settings("Settings") }
 
 /** Top-level shell. Navigation is a shared bottom bar for now; per-platform navigation comes with the platform UI stages. */
 @Composable
@@ -36,6 +37,7 @@ fun App(container: AppContainer) {
                 when (tab) {
                     Tab.Home -> HomeRoute(container.home)
                     Tab.Discover -> DiscoverRoute(container.discover)
+                    Tab.Settings -> SettingsRoute(container.settings)
                 }
             }
         }

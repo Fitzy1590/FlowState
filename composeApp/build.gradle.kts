@@ -45,6 +45,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.swing)
                 implementation(libs.sqldelight.sqlite.driver)
                 implementation(libs.ktor.client.okhttp)
+                implementation(libs.jna.platform)
             }
         }
     }

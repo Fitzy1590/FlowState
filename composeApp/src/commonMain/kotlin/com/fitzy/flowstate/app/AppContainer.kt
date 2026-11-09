@@ -2,11 +2,14 @@ package com.fitzy.flowstate.app
 
 import app.cash.sqldelight.db.SqlDriver
 import com.fitzy.flowstate.data.Catalog
-import com.fitzy.flowstate.data.SampleCatalog
+import com.fitzy.flowstate.data.SecretAwareCatalog
 import com.fitzy.flowstate.data.local.FlowRepository
 import com.fitzy.flowstate.db.FlowDatabase
 import com.fitzy.flowstate.presenter.DiscoverPresenter
 import com.fitzy.flowstate.presenter.HomePresenter
+import com.fitzy.flowstate.presenter.SettingsPresenter
+import com.fitzy.flowstate.secrets.SecretStore
+import io.ktor.client.HttpClient
 import com.fitzy.flowstate.reco.InterestPrompter
 import com.fitzy.flowstate.reco.Recommender
 import kotlinx.coroutines.CoroutineScope
@@ -16,13 +19,18 @@ class AppContainer(
     driver: SqlDriver,
     scope: CoroutineScope,
     clock: () -> Long,
-    catalogFactory: (FlowRepository) -> Catalog = { SampleCatalog() },
+    val secrets: SecretStore,
+    http: HttpClient,
 ) {
     val repository = FlowRepository(FlowDatabase(driver), clock)
-    private val catalog = catalogFactory(repository)
+    private val catalog: Catalog = SecretAwareCatalog(secrets, http, seeds = { repository.profile().likedSeeds }, clock = clock)
     private val recommender = Recommender(currentYear = yearOf(clock()))
     val home = HomePresenter(repository, catalog, recommender, InterestPrompter(), scope, clock)
     val discover = DiscoverPresenter(repository, catalog, recommender, scope)
+    val settings = SettingsPresenter(secrets) {
+        home.load()
+        discover.load()
+    }
 }
 
 /** Gregorian year from epoch millis, using the mean year length. */
