@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/*.jks)",
+      "Read(**/*.p12)",
+      "Read(**/*.keystore)",
+      "Read(signing/*.p12)",
+      "Read(./.env)",
+      "Read(./secrets/**)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -x ./gradlew ] || exit 0; ./gradlew check 1>&2 || exit 2"
+          }
+        ]
+      }
+    ]
+  }
+}
