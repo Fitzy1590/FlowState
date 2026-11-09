@@ -6,6 +6,9 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.disk.DiskCache
 import com.fitzy.flowstate.app.AppContainer
 import com.fitzy.flowstate.data.tmdb.withTmdbJson
 import com.fitzy.flowstate.db.FlowDatabase
@@ -14,7 +17,10 @@ import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import okio.Path.Companion.toOkioPath
 import java.io.File
+
+private const val POSTER_CACHE_BYTES = 200L * 1024 * 1024
 
 /** %APPDATA%\FlowState on Windows, ~/.flowstate elsewhere. */
 private fun dataDir(): File {
@@ -31,6 +37,11 @@ private fun createDriver(): JdbcSqliteDriver {
 }
 
 fun main() = application {
+    setSingletonImageLoaderFactory { context ->
+        ImageLoader.Builder(context)
+            .diskCache { DiskCache.Builder().directory(File(dataDir(), "poster-cache").toOkioPath()).maxSizeBytes(POSTER_CACHE_BYTES).build() }
+            .build()
+    }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     val container = AppContainer(createDriver(), scope, clock = System::currentTimeMillis, secrets = desktopSecretStore(dataDir()), http = HttpClient(OkHttp).withTmdbJson())
     Window(

@@ -31,6 +31,11 @@ fun SettingsScreen(state: SettingsState, onSave: (String, String) -> Boolean, on
         KeyField("TMDB read access token", "Needed for real posters and recommendations. Use the long v4 token.", SecretNames.TMDB, state.tmdbSet, onSave, onClear)
         KeyField("Claude API key", "Needed for AI search and episode summaries.", SecretNames.CLAUDE, state.claudeSet, onSave, onClear)
         KeyField("YouTube Data API key", "Optional. Lets season recaps open the top result.", SecretNames.YOUTUBE, state.youtubeSet, onSave, onClear)
+        Text("About", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "This product uses the TMDB API but is not endorsed or certified by TMDB.",
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 
