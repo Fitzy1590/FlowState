@@ -105,4 +105,4 @@ Procedure: skill `update-system`. GitHub `releases/latest`, ETag, skip-version, 
 | Unverified Nuvio/`stremio://` shapes | Feature flags + device tests, spike task T0 |
 
 ## 8. Dependencies (versions to be pinned at scaffold time)
-Kotlin, Compose Multiplatform, AGP 9.x with `com.android.kotlin.multiplatform.library`, `androidx.tv:tv-material` 1.1.0, Ktor client, kotlinx-serialization, SQLDelight, Coil 3, WorkManager (Android only), Koin or manual DI.
+Pinned in `gradle/libs.versions.toml`: Kotlin 2.4.21, Compose Multiplatform 1.12.2, AGP 9.5.1 with `com.android.kotlin.multiplatform.library`, `androidx.tv:tv-material` 1.1.0, Ktor client, kotlinx-serialization, SQLDelight, Coil 3, WorkManager (Android only), Koin or manual DI.
