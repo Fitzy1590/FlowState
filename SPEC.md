@@ -66,7 +66,7 @@ Formula and weights: skill `reco-scoring`. Summary:
 - Stats (2f): rating histogram (10 bins), total hours (sum `timeWatched`), top actors by affinity, titles count.
 
 ## 3. Deep linking
-Procedure and safety rules: skill `deeplink-handlers`. Default player stored in prefs (`stremio|nuvio|ask`). Web fallback when handler is missing. Nuvio scheme unknown: hidden until the spike confirms it.
+Procedure and safety rules: skill `deeplink-handlers`. Default player stored in prefs (`stremio|nuvio|ask`). Web fallback when handler is missing. Nuvio (verified in source): `nuvio://series/{tt}`, `nuvio://movie/{tt}`, `nuvio://meta?type=&id=`; opens the detail page, not autoplay; Android/TV only (no Windows handler).
 
 ## 4. Sync
 - Local DB is the source of truth; `dirty` flag per row.
@@ -74,7 +74,8 @@ Procedure and safety rules: skill `deeplink-handlers`. Default player stored in 
 - Schedule: Android WorkManager periodic 15 min (constraints: network; Wi-Fi-only default on), plus on app foreground. Windows: coroutine scheduler every 15 min in tray-resident process (`exitProcessOnExit=false`); "Sync now" in tray menu. TV uses the Android worker.
 - Conflict log table `sync_conflict`; UI list with Keep local / Keep remote (re-push with fresh mtime).
 - Trakt (optional): OAuth device flow (`/oauth/device/code`, `/oauth/device/token`), `/sync/watched`, `/sync/playback`; rate 1 POST/s, ~1000 GET/5 min (verify); Trakt timestamps follow the same latest-wins rule.
-- Nuvio: adapter interface `AccountSync`; Nuvio impl returns `Unsupported` until the spike (`FEATURE_PROGRESS.md` T0) records endpoints.
+- Nuvio (spike T0 done, source-verified): Supabase RPC sync; endpoints, units and mapping in skill `stremio-nuvio-sync`. Adapter `AccountSync` implemented for Nuvio using `sync_pull_watch_progress` / `sync_push_watch_progress` / delta cursor, watched items, per profile. Open items: (a) base URL + anon key are build-time secrets, so they are user-supplied settings; (b) server conflict rule inferred, verify with a test account; (c) ToS at nuvioapp.space/legal unchecked, opt-in and experimental; (d) ask maintainers if API use by third parties is welcome.
+- Nuvio is the user's main player: FlowState is the bridge between Stremio and Nuvio (they do not sync with each other).
 
 ## 5. Updates
 Procedure: skill `update-system`. GitHub `releases/latest`, ETag, skip-version, sha256 check, `.apk`/`.msi`. Startup check once per 24h; Settings button forces a check with progress bar.

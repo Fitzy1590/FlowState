@@ -19,9 +19,17 @@ description: Use when implementing Stremio/Nuvio login, token handling, library 
 4. Write a `sync_conflict` row (item, local, remote, winner) for the conflict log UI; manual override re-pushes with a fresh mtime.
 5. Never push items the local DB has not changed since last sync (use a `dirty` flag).
 
-## Nuvio (UNVERIFIED, behind flag `nuvioSync`)
-- Spike first: read github.com/tapframe/NuvioMobile and NuvioMedia/NuvioTV for the Supabase URL, tables, auth flow and `nuvio://` scheme. Record findings in `SPEC.md` section 5 before coding.
-- Until confirmed, ship the UI as "Experimental" and make the adapter return `Unsupported`.
+## Nuvio (source-verified from tapframe/NuvioMobile + NuvioMedia/NuvioTV; server SQL not public)
+- Backend is plain Supabase. Base URL and public anon key are NOT in source (build-time `local.properties`). Make both user-configurable settings (`nuvioBaseUrl`, `nuvioAnonKey`); never hardcode or commit them. Header `apikey: <anon>`; user calls use `Authorization: Bearer <access_token>`.
+- Auth: `POST /auth/v1/token?grant_type=password` {email,password}; refresh `?grant_type=refresh_token`; refresh on 401/"JWT expired" then retry once. Store refresh token encrypted. TV QR login exists (RPCs `start_tv_login_session`/`poll_tv_login_session` + exchange) but is optional.
+- All data via `POST /rest/v1/rpc/<name>`, per profile `p_profile_id` (default 1). Linked devices read the owner's data (`get_sync_owner`).
+- Progress: `sync_pull_watch_progress` {p_profile_id,p_since_last_watched?,p_limit?}; `sync_push_watch_progress` {p_profile_id,p_entries:[{content_id,content_type,video_id,season?,episode?,position(ms),duration(ms),last_watched(epoch ms),progress_key}],p_client_id}; `sync_delete_watch_progress` {p_keys,p_profile_id}. Delta: `sync_get_watch_progress_delta_cursor`, `sync_pull_watch_progress_delta` {p_profile_id,p_since_event_id,p_limit} -> events {event_id,operation upsert|delete,...}.
+- Watched items: `sync_push_watched_items`/`sync_pull_watched_items` {p_page,p_page_size}/`sync_delete_watched_items`. Library: `sync_pull_library`/`sync_push_library_items`.
+- Semantics: completed = position/duration >= 0.90; skip entries with position<=1 and duration<=1; `progress_key` is a client dedupe key (copy NuvioTV `canonicalizeForRemote`); deletes are events. Server conflict rule is INFERRED last-write-wins on `last_watched`: still apply local latest-wins and verify with a test account.
+- Mapping to Stremio: Nuvio position/duration ms == Stremio `timeOffset`/`duration` ms; `video_id` = `tt:S:E` in both; `last_watched` epoch ms <-> Stremio ISO `lastWatched`.
+- Nuvio does not sync with Stremio accounts, so FlowState is the bridge (Stremio <-> local DB <-> Nuvio).
+- No Nuvio ratings table; keep 0-100 ratings local (+Trakt).
+- Legal: nuvioapp.space/legal API-use terms unchecked. Use only with the user's own account, keep it opt-in and labelled experimental.
 
 ## Threading
 All calls on `Dispatchers.IO`; repository exposes `Flow`; Ktor timeouts 15s; retry with exponential backoff (max 3) on 5xx/IO errors, never on 4xx.

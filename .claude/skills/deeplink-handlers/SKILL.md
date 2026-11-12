@@ -8,7 +8,8 @@ description: Use when building Play Now deep links, Android intents, Windows pro
 - Series episode: `stremio:///detail/series/{imdbId}/{imdbId}:{season}:{episode}`
 - Movie: `stremio:///detail/movie/{imdbId}/{imdbId}`
 - Web fallback: `https://web.stremio.com/#/detail/{type}/{imdbId}/{videoId}`
-- Nuvio: `nuvio://` unknown. Hide the option until the scheme is confirmed (flag `nuvioLink`).
+- Nuvio (source-verified, Android/TV only): `nuvio://series/{imdbId}`, `nuvio://movie/{imdbId}`, or `nuvio://meta?type={movie|series}&id={imdbId}`. Opens the detail page, NOT autoplay. No Windows handler exists in Nuvio: on Windows hide Nuvio or fall back to web.
+- Do not use `nuvio://auth/...`, `party`, or addon-install links.
 
 ## Safety
 - Build URIs only from validated parts: `imdbId` matches `^tt\d{1,10}$`, season/episode are ints 0..9999, type in {movie,series}. Reject otherwise.

@@ -7,9 +7,11 @@ Legend: [ ] todo, [~] in progress, [x] done and `./gradlew check` green.
 Phases 1-4 (research, guardrails, spec, checkpoint) complete. Next: T1 scaffold.
 
 ## Tasks (in order)
-- [ ] T0 Spike: read NuvioMobile/NuvioTV source; record Supabase tables, auth, `nuvio://` in SPEC section 4/3. Verify `stremio://` shapes on device. (Gates 3c, 4c)
+- [x] T0 Nuvio spike done (findings in SPEC 3/4 + skill `stremio-nuvio-sync`). Still open: `stremio://` device test; user to supply Nuvio base URL + anon key (not in source); confirm server conflict rule with a test account; check nuvioapp.space/legal.
+- Priority change: Nuvio is the user's main player. Do T1, T2, then T3n (Nuvio sync) BEFORE Stremio T3.
 - [ ] T1 Scaffold Gradle: `shared` (KMP lib), `androidApp`, `desktopApp`; version catalog; `./gradlew check` passes. Verify: `check` green, `desktopApp:run` opens a window, `androidApp:assembleDebug` builds.
 - [ ] T2 Data layer 4g: SQLDelight schema (library, user_rating, actor_pref, sync_conflict, settings). Verify: repository unit tests.
+- [ ] T3n Nuvio client + sync 4c, 4e (GoTrue login+refresh, progress/watched RPCs, delta cursor, progress_key, profile select). Verify: MockEngine tests for token refresh retry, push/pull mapping, 0.90 completion, delete events; manual run against user's account.
 - [ ] T3 Stremio client + sync 4a, 4e. Verify: fake-server tests for conflict rules (tie, skew, removal).
 - [ ] T4 Background sync 4b (Android) and 4d (Windows tray). Verify: worker test; manual tray run.
 - [ ] T5 Metadata: TMDB client, OMDb badges 2b, Letterboxd link 2c. Verify: parser tests with fixtures.
