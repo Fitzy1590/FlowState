@@ -1,8 +1,17 @@
 ---
 name: stremio-nuvio-sync
-description: Use when implementing Stremio/Nuvio login, token handling, library pull/push, or sync conflict resolution.
+description: Use when implementing Trakt, Stremio or Nuvio login, token handling, library pull/push, or sync conflict resolution.
 ---
 # Stremio / Nuvio sync procedure
+
+## Trakt (PRIMARY; carries Nuvio progress; details UNVERIFIED, test with real account)
+- Base `https://api.trakt.tv`; headers `trakt-api-version: 2`, `trakt-api-key: <client_id>`, `Authorization: Bearer`. Client id/secret come from user config (never committed).
+- Login: device flow `POST /oauth/device/code` -> show code + QR -> poll `POST /oauth/device/token`. Refresh with `refresh_token` before expiry and on 401; store tokens encrypted.
+- Each cycle: `GET /sync/last_activities`; only fetch categories whose timestamp changed since last sync.
+- Pull: `/sync/history/{movies|episodes}?start_at=`, `/sync/playback` (progress is a PERCENT; store as percent, derive ms from duration when known).
+- Push: `POST /sync/history` (watched_at ISO UTC), `POST /sync/playback`-style scrobble where applicable, `POST /sync/ratings` (see SPEC 2). Use Trakt ids or imdb ids; dedupe by imdb id + season/episode.
+- Conflict: newest timestamp wins (`watched_at`, `paused_at`, `rated_at`); log conflicts. Respect 429 `Retry-After`; ~1 write/s.
+- User must set Nuvio's progress source to Trakt; show a hint in onboarding.
 
 ## Stremio (verified against stremio-core)
 - Base `https://api.strem.io/api/`, all POST JSON, no headers for auth.

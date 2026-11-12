@@ -1,6 +1,6 @@
 # FlowState (`com.fitzy.flowstate`)
 
-Compose Multiplatform tracker: Android, Android TV, Windows. Syncs Stremio (+ Nuvio, experimental) watch state.
+Compose Multiplatform tracker: Android, Android TV, Windows. Syncs watch state via Trakt (primary; covers Nuvio) and optionally Stremio/Nuvio directly.
 Specs: `SPEC.md`. Progress and next steps: `FEATURE_PROGRESS.md` (read it first after `/clear`).
 
 ## Modules (AGP 9: KMP plugin cannot share a module with `com.android.application`)
@@ -36,7 +36,8 @@ Specs: `SPEC.md`. Progress and next steps: `FEATURE_PROGRESS.md` (read it first 
 - Never skip or disable a failing test to get green.
 
 ## Unverified areas (feature-flagged until confirmed)
-- Nuvio sync (Supabase schema) and `nuvio://` scheme. Spike first: read NuvioMobile source.
+- Direct Nuvio sync (Supabase URL/key are not public; ToS unchecked): optional, flag `nuvioSync`.
+- Trakt endpoint details (percent progress, rate limits): verify against a real account.
 - `stremio://` URL shapes: confirm on a device before relying on them.
 
 ## Token hygiene
