@@ -1,0 +1,154 @@
+<title>FlowState Feature Vote</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: sticky summary bar on top, six category sections of selectable cards, each card = mock screenshot + checkbox + text. */
+:root{--bg:#F3F5F7;--surface:#FFFFFF;--fg:#14202B;--mute:#5B6B7A;--line:#D5DCE3;--accent:#0B8F7E;--accent-fg:#FFFFFF;--accent-soft:#DDF3EF;--warn:#B45309;--warn-soft:#FDEBD3;
+--dv:#0E1116;--dv2:#1A2029;--dv3:#262E3A;--dvfg:#E8ECF1;--dvmute:#8D9AAA;--dvacc:#3DD6BF;
+--fd:'Space Grotesk',system-ui,sans-serif;--fb:'Inter',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B0F14;--surface:#141A21;--fg:#E6EBF0;--mute:#93A1AF;--line:#26303B;--accent:#3DD6BF;--accent-fg:#07201C;--accent-soft:#12332F;--warn:#F5B05A;--warn-soft:#3A2A12;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B0F14;--surface:#141A21;--fg:#E6EBF0;--mute:#93A1AF;--line:#26303B;--accent:#3DD6BF;--accent-fg:#07201C;--accent-soft:#12332F;--warn:#F5B05A;--warn-soft:#3A2A12;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--fb);font-size:14px;line-height:1.5;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+*{box-sizing:border-box}
+.wrap{max-width:1240px;margin:0 auto;padding-block:20px 120px}
+h1{font:700 28px/1.15 var(--fd);margin:0 0 6px;text-wrap:balance}
+h2{font:700 20px/1.2 var(--fd);margin:0;text-wrap:balance}
+.lead{color:var(--mute);max-width:70ch;margin:0 0 16px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+button{font:500 13px var(--fb);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 12px;border-radius:8px;cursor:pointer}
+button.pri{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+button:focus-visible,label.card:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.findings{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:12px 0 4px;color:var(--mute);font-size:13px}
+.findings b{color:var(--fg)}
+section{margin-top:34px}
+.sh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:14px}
+.sh small{color:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:14px}
+label.card{display:flex;flex-direction:column;background:var(--surface);border:2px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;min-width:0}
+label.card:has(input:checked){border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.shot{background:var(--bg);display:flex;align-items:center;justify-content:center;padding:12px;min-height:210px;border-bottom:1px solid var(--line)}
+.meta{display:flex;gap:10px;padding:12px;align-items:flex-start}
+.meta input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent);flex:none}
+.meta b{font:600 14px var(--fb);display:block}
+.meta span{color:var(--mute);font-size:12.5px;display:block}
+.id{font:600 11px var(--fd);color:var(--accent);letter-spacing:.06em;margin-right:6px}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;margin-left:6px;font-weight:600;vertical-align:1px}
+.rec{background:var(--accent-soft);color:var(--accent)}.risk{background:var(--warn-soft);color:var(--warn)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:20}
+.bar .in{max-width:1240px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bar .n{font:700 15px var(--fd);margin-right:auto}
+#out{display:none;width:100%;min-height:90px;font:12px/1.4 ui-monospace,monospace;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px}
+.msg{font-size:12px;color:var(--accent)}
+/* mock devices: always dark screens */
+.dev{background:var(--dv);color:var(--dvfg);border-radius:10px;padding:10px;font:11px/1.35 var(--fb);width:100%;max-width:260px;border:1px solid #000;overflow:hidden}
+.dev.tv{max-width:100%;aspect-ratio:16/9;padding:12px;border-radius:6px;border:5px solid #000}
+.dev.win{max-width:100%;padding:0;border-radius:6px}
+.dev.ph{max-width:190px;border-radius:18px;border:4px solid #000}
+.tb{background:var(--dv3);padding:4px 8px;display:flex;gap:4px;align-items:center;font-size:10px;color:var(--dvmute)}
+.tb i{width:7px;height:7px;border-radius:50%;background:#556}
+.h{font:700 12px var(--fd);margin-bottom:6px}.m{color:var(--dvmute);font-size:10px}
+.row{display:flex;gap:6px;align-items:center}.col{display:flex;flex-direction:column;gap:5px}.sp{justify-content:space-between}
+.po{aspect-ratio:2/3;border-radius:4px;font-size:8px;padding:3px;display:flex;align-items:flex-end;font-weight:600;color:#fff;min-width:0;overflow:hidden}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.li{background:var(--dv2);border-radius:6px;padding:6px;display:flex;gap:6px;align-items:center}
+.li .po{width:26px;flex:none}
+.pill{background:var(--dv3);border-radius:99px;padding:2px 7px;font-size:10px;white-space:nowrap}
+.pill.ok{background:#12413A;color:var(--dvacc)}.pill.no{background:#4A1F26;color:#FF8C9A}.pill.w{background:#4A3510;color:#F5B05A}
+.meter{height:5px;border-radius:3px;background:var(--dv3);overflow:hidden;flex:1}.meter>i{display:block;height:100%;background:var(--dvacc)}
+.btn{background:var(--dvacc);color:#07201C;border-radius:6px;padding:5px 9px;font-weight:700;text-align:center;font-size:11px;white-space:nowrap}
+.btn.g{background:var(--dv3);color:var(--dvfg)}.btn.off{background:var(--dv3);color:var(--dvmute)}
+.foc{outline:2px solid var(--dvacc);transform:scale(1.06);box-shadow:0 4px 14px #0008}
+.sl{position:relative;height:6px;border-radius:3px;background:var(--dv3);margin:12px 0}.sl>i{position:absolute;left:0;top:0;bottom:0;background:var(--dvacc);border-radius:3px}.sl>b{position:absolute;top:-5px;width:16px;height:16px;border-radius:50%;background:#fff;margin-left:-8px}
+.big{font:700 26px var(--fd);text-align:center}
+.arrow{color:var(--dvacc);font-weight:700}
+.tab{padding:3px 7px;border-radius:5px;color:var(--dvmute)}.tab.on{background:var(--dv3);color:var(--dvfg)}
+.qr{width:44px;height:44px;background:repeating-conic-gradient(#fff 0 25%,#000 0 50%) 0 0/8px 8px;border:3px solid #fff}
+.hist{display:flex;align-items:flex-end;gap:3px;height:60px}.hist i{flex:1;background:var(--dvacc);border-radius:2px 2px 0 0}
+.mod{border:1px dashed var(--dvmute);border-radius:6px;padding:6px;text-align:center;font-size:10px}
+@media (prefers-reduced-motion:no-preference){label.card{transition:box-shadow .15s,border-color .15s}}
+</style>
+<div class="wrap">
+<h1>FlowState: choose your features</h1>
+<p class="lead">Tick the cards you want built. Each card shows a mock of the screen. Cards tagged <span class="tag rec">recommended</span> are my defaults; <span class="tag risk">unverified</span> marks items that depend on APIs I could not confirm. Then press <b>Copy my picks</b> and paste the result into the chat.</p>
+<div class="findings"><b>Research notes.</b> Stremio library sync is confirmed from stremio-core source (<code>_mtime</code> latest-wins). Nuvio has no public sync docs and no confirmed <code>nuvio://</code> scheme. Letterboxd has no open API, so only link-outs. tv-material 1.1.0 is now stable. AGP 9 forces a 3-module layout. Silent APK updates are impossible; installs need a user tap.</div>
+<div class="tools"><button id="rec" class="pri">Tick all recommended</button><button id="clr">Clear all</button></div>
+<main id="root"></main>
+</div>
+<div class="bar"><div class="in"><span class="n"><span id="cnt">0</span> selected</span><span class="msg" id="msg"></span><button id="show">Show text</button><button class="pri" id="copy">Copy my picks</button><textarea id="out" readonly aria-label="Your picks"></textarea></div></div>
+<script>
+var C=['#6C5CE7,#2D1B69','#E17055,#6B2A1B','#00B894,#0B4A3B','#0984E3,#0B2F5E','#FDCB6E,#7A5A10','#E84393,#5E1238','#636E72,#1E272C','#00CEC9,#0A4B49'];
+function P(i,t){var c=C[i%8].split(',');return '<div class="po" style="background:linear-gradient(160deg,'+c[0]+','+c[1]+')">'+(t||'')+'</div>'}
+function ph(x){return '<div class="dev ph">'+x+'</div>'}
+function tv(x){return '<div class="dev tv">'+x+'</div>'}
+function win(t,x){return '<div class="dev win"><div class="tb"><i></i><i></i><i></i>&nbsp;'+t+'</div><div style="padding:10px">'+x+'</div></div>'}
+function dev(x){return '<div class="dev">'+x+'</div>'}
+function li(i,t,s,r){return '<div class="li">'+P(i)+'<div style="flex:1;min-width:0"><b>'+t+'</b><div class="m">'+s+'</div></div>'+(r||'')+'</div>'}
+var CATS=[
+{t:'1. AI Recommendation & Discovery',items:[
+['1a','Taste-vector recommendations','Genres, ratings and completion rate scored against TMDB.',1,ph('<div class="h">For You</div><div class="col">'+li(0,'Severance','Sci-fi · Thriller','<span class="pill ok">94%</span>')+li(1,'Slow Horses','Spy · Drama','<span class="pill ok">91%</span>')+li(2,'Andor','Sci-fi · Drama','<span class="pill ok">88%</span>')+li(3,'Fargo','Crime','<span class="pill">79%</span>')+'</div>')],
+['1b','Liked / Disliked actor weighting','Boost titles with liked actors, penalize or hide disliked ones.',1,ph('<div class="h">Actors</div><div class="row" style="flex-wrap:wrap"><span class="pill ok">+ Oscar Isaac</span><span class="pill ok">+ Pedro Pascal</span><span class="pill no">− Actor X</span></div><div class="col" style="margin-top:8px">'+li(4,'The Mandalorian','Pedro Pascal','<span class="pill ok">+12</span>')+li(5,'Movie Y','Actor X','<span class="pill no">hidden</span>')+'</div>')],
+['1c','"Because you like…" explanations','Every recommendation says why it was picked.',1,ph('<div class="li" style="flex-direction:column;align-items:stretch">'+P(0)+'<b>Mr. Robot</b><div class="m">Because you rated <b>Severance</b> 92 and like <b>Rami Malek</b></div><div class="row"><div class="meter"><i style="width:86%"></i></div><span>86</span></div></div>')],
+['1d','"Similar Shows / Movies" tab','A detail page tab from TMDB similar titles.',1,ph('<div class="h">Severance</div><div class="row" style="margin-bottom:6px"><span class="tab">Episodes</span><span class="tab on">Similar</span><span class="tab">Cast</span></div><div class="g3">'+P(1,'Dark')+P(2,'Devs')+P(3,'Silo')+P(4,'Lost')+P(5,'Fringe')+P(6,'Westworld')+'</div>')],
+['1e','Actor pin / mute list + learned affinity','Manual overrides on top of scores learned from your ratings.',0,ph('<div class="h">Actor preferences</div><div class="col">'+['Oscar Isaac|82|📌','Pedro Pascal|74|','Actor X|18|🔇'].map(function(a){a=a.split('|');return '<div class="row sp"><span style="width:70px">'+a[0]+'</span><div class="meter"><i style="width:'+a[1]+'%"></i></div><span>'+a[1]+' '+a[2]+'</span></div>'}).join('')+'</div>')],
+['1f','Trakt as an extra signal','Blend Trakt recommendations into the score.',0,dev('<div class="h">Recommendation sources</div><div class="col"><div class="row sp"><span>TMDB similarity</span><span class="pill ok">60%</span></div><div class="row sp"><span>Your ratings</span><span class="pill ok">30%</span></div><div class="row sp"><span>Trakt</span><span class="pill">10%</span></div><div class="sl"><i style="width:10%"></i><b style="left:10%"></b></div></div>')]]},
+{t:'2. Ratings Hub & 100-Point Scoring',items:[
+['2a','Post-watch 0–100 rating modal','Slider plus number field, saved locally.',1,ph('<div class="m">You finished</div><div class="h">Severance S2E10</div><div class="big">87</div><div class="sl"><i style="width:87%"></i><b style="left:87%"></b></div><div class="row sp"><span class="btn g">Skip</span><span class="btn">Save rating</span></div>')],
+['2b','IMDb + Rotten Tomatoes badges','Scores from OMDb, shown on the detail page.',1,ph('<div class="h">Severance</div><div class="row" style="flex-wrap:wrap"><span class="pill w">IMDb 8.7</span><span class="pill no">🍅 97%</span><span class="pill ok">🍿 93%</span></div><div class="m" style="margin-top:8px">Your score</div><div class="big">87</div>')],
+['2c','Letterboxd link-out','Opens the film page; no score API exists.',1,ph('<div class="h">Dune: Part Two</div><div class="col"><div class="btn g">Open on Letterboxd ↗</div><div class="btn g">Open on IMDb ↗</div></div>')],
+['2d','Rating display toggle','Show your score as 100, 10 or 5 stars.',0,dev('<div class="row" style="margin-bottom:8px"><span class="tab">100</span><span class="tab on">10</span><span class="tab">★ 5</span></div><div class="big">8.7</div><div class="m" style="text-align:center">stored internally as 87</div>')],
+['2e','Sync your rating to Trakt','Lossy 100 → 10 conversion, flagged in the UI.',0,dev('<div class="row sp"><b>FlowState</b><b>87</b></div><div class="arrow" style="text-align:center">↓</div><div class="row sp"><b>Trakt</b><b>9</b></div><div class="m">Rounded on export. Your 87 stays here.</div>')],
+['2f','Stats dashboard','Rating spread, top actors, hours watched.',0,ph('<div class="h">Your stats</div><div class="hist">'+[10,16,28,44,60,48,30,12].map(function(h){return '<i style="height:'+h+'px"></i>'}).join('')+'</div><div class="m">Rating distribution</div><div class="row sp" style="margin-top:6px"><span class="pill">412 h</span><span class="pill">186 shows</span></div>')]]},
+{t:'3. "Play Now" Deep-Linking',items:[
+['3a','Stremio deep link (Android / TV)','Opens the exact episode in Stremio.',1,ph('<div class="h">S2E04 · Woe\'s Hollow</div><div class="m">Resume at 21:40</div><div style="height:50px"></div><div class="btn">▶ Play in Stremio</div>')],
+['3b','Stremio deep link (Windows)','Protocol handler written to the registry on first run.',1,win('FlowState','<div class="row sp"><div><b>The Bear S3E01</b><div class="m">Resume at 00:00</div></div><span class="btn">▶ Play in Stremio</span></div><div class="pill" style="margin-top:8px">Opening Stremio…</div>')],
+['3c','Nuvio deep link','Scheme not confirmed.',0,ph('<div class="h">Play with</div><div class="col"><div class="btn">Stremio</div><div class="btn off">Nuvio (needs research)</div></div>'),'risk'],
+['3d','Web fallback','If the app is missing, open web.stremio.com.',1,dev('<div class="h">Stremio not found</div><div class="m">Open this episode in the browser instead?</div><div class="row sp" style="margin-top:8px"><span class="btn g">Cancel</span><span class="btn">Open web player</span></div>')],
+['3e','Default player setting','Pick Stremio, Nuvio, or ask every time.',0,dev('<div class="h">Default player</div><div class="col"><div class="li">◉ Stremio</div><div class="li">○ Nuvio</div><div class="li">○ Ask every time</div></div>')]]},
+{t:'4. 2-Way Sync & Background Engine',items:[
+['4a','Stremio 2-way sync','Latest <code>_mtime</code> wins.',1,dev('<div class="h">Sync</div><div class="li"><b>Stremio</b><span class="arrow">⇄</span><b>FlowState</b><span class="pill ok" style="margin-left:auto">OK</span></div><div class="m" style="margin-top:6px">Last sync 2 min ago · 14 pulled · 3 pushed · 1 conflict</div>')],
+['4b','Android background sync','WorkManager, about every 15 minutes.',1,ph('<div class="h">Background sync</div><div class="col"><div class="row sp"><span>Every</span><span class="pill">15 min</span></div><div class="row sp"><span>Wi-Fi only</span><span class="pill ok">On</span></div><div class="row sp"><span>Only when charging</span><span class="pill">Off</span></div></div>')],
+['4c','Nuvio sync','Schema unverified; needs source research.',0,dev('<div class="h">Nuvio</div><div class="pill w">Experimental</div><div class="m" style="margin-top:6px">Sign-in and progress sync depend on an undocumented backend.</div><div class="btn off" style="margin-top:8px">Connect Nuvio</div>'),'risk'],
+['4d','Windows tray sync','Resident tray worker with a quick menu.',1,win('System tray','<div class="col" style="max-width:150px;margin-left:auto"><div class="li"><span class="pill ok">●</span> Synced 2 min ago</div><div class="li">Sync now</div><div class="li">Open FlowState</div><div class="li">Quit</div></div>')],
+['4e','Conflict log + manual override','See what changed and pick a side.',1,dev('<div class="h">Conflict: Severance S2E04</div><div class="col"><div class="li"><div style="flex:1"><b>This device</b><div class="m">21:40 · Nov 11, 21:04</div></div><span class="btn g">Keep</span></div><div class="li"><div style="flex:1"><b>Stremio</b><div class="m">33:12 · Nov 12, 08:12</div></div><span class="btn">Keep</span></div></div>')],
+['4f','Optional Trakt sync','Device-code login; Trakt is never required.',0,dev('<div class="h">Connect Trakt</div><div class="m">Go to trakt.tv/activate and enter</div><div class="big" style="letter-spacing:.15em">AB12CD34</div><div class="m" style="text-align:center">Waiting for approval…</div>')],
+['4g','Offline-first local database','SQLDelight is the source of truth; sync happens after.',1,dev('<div class="col" style="align-items:center"><div class="mod">Stremio</div><div class="arrow">⇅</div><div class="mod" style="border-style:solid;border-color:var(--dvacc);width:100%">Local DB (SQLDelight)</div><div class="arrow">⇅</div><div class="mod">UI · works offline</div></div>')]]},
+{t:'5. Update System',items:[
+['5a','Startup update prompt','Silent check against GitHub Releases.',1,ph('<div class="h">Update available</div><div class="m">FlowState 1.4.0 · 18 MB</div><div style="height:30px"></div><div class="col"><div class="btn">Update now</div><div class="btn g">Skip this version</div></div>')],
+['5b','"Check for Updates" in Settings','Button with a download progress bar.',1,dev('<div class="h">About</div><div class="row sp"><span>Version 1.3.2</span><span class="btn g">Check for updates</span></div><div class="m" style="margin-top:8px">Downloading 1.4.0 · 63%</div><div class="meter" style="margin-top:4px"><i style="width:63%"></i></div>')],
+['5c','Android APK installer','Hands the download to the system installer.',1,ph('<div class="h">Install update?</div><div class="m">FlowState 1.4.0 will replace the current version. Your data is kept.</div><div style="height:24px"></div><div class="row sp"><span class="btn g">Cancel</span><span class="btn">Install</span></div>')],
+['5d','Windows installer','Runs the .msi or .exe after download.',1,win('FlowState Setup','<div class="h">Ready to update to 1.4.0</div><div class="meter"><i style="width:100%"></i></div><div class="row sp" style="margin-top:8px"><span class="m">flowstate-1.4.0.msi</span><span class="btn">Install</span></div>')],
+['5e','Stable / Beta channel','Choose which releases to see.',0,dev('<div class="h">Update channel</div><div class="row"><span class="tab on">Stable</span><span class="tab">Beta</span></div><div class="m" style="margin-top:6px">Beta includes pre-releases.</div>')]]},
+{t:'6. Triple-Platform Layout',items:[
+['6a','Android mobile layout','Material 3, swipeable posters, expandable episodes.',1,ph('<div class="h">Continue watching</div><div class="g3">'+P(0,'Severance')+P(1,'Bear')+P(2,'Andor')+'</div><div class="li" style="margin-top:6px"><b>▾ Season 2</b></div><div class="li"><span class="m">E04</span><b>Woe\'s Hollow</b><span class="pill ok" style="margin-left:auto">✓</span></div>')],
+['6b','Android TV D-pad grid','tv-material 1.1.0; focused card scales and gets a border.',1,tv('<div class="h">Continue watching</div><div class="g4">'+P(0,'Severance')+'<div class="foc">'+P(1,'The Bear')+'</div>'+P(2,'Andor')+P(3,'Fargo')+'</div><div class="m" style="margin-top:8px">Focus scale 1.06× + 2dp border · focus restored on back</div>')],
+['6c','TV device-code login','Scan the QR on your phone, no typing.',0,tv('<div class="row" style="height:100%;justify-content:center;gap:20px"><div class="qr"></div><div><div class="h">Sign in on your phone</div><div class="big" style="text-align:left;letter-spacing:.12em">AB12CD34</div></div></div>')],
+['6d','Windows multi-pane','Resizable panes and keyboard shortcuts.',1,win('FlowState','<div class="row" style="align-items:stretch"><div class="col" style="width:50px"><span class="pill ok">Home</span><span class="pill">Library</span><span class="pill">Stats</span></div><div class="g3" style="flex:1">'+P(0)+P(1)+P(2)+P(3)+P(4)+P(5)+'</div><div class="li" style="width:70px;flex-direction:column"><b>Detail</b><span class="m">Ctrl+F search</span></div></div>')],
+['6e','Windows tray mini-tracker','Small popup with next episodes.',0,win('Tray popup','<div class="col" style="max-width:160px;margin-left:auto">'+li(0,'Severance','S2E05 · tonight')+li(1,'The Bear','S3E02 · tomorrow')+'</div>')],
+['6f','Next-episode calendar','Airing countdowns like Next Episode.',0,ph('<div class="h">Upcoming</div><div class="col">'+li(0,'Severance','S2E05','<span class="pill ok">in 2 h</span>')+li(1,'Andor','S2E03','<span class="pill">in 1 d</span>')+li(2,'Fargo','S6E01','<span class="pill">in 4 d</span>')+'</div>')]]},
+{t:'7. Architecture decisions',items:[
+['7a','3-module layout (AGP 9)','shared + androidApp + desktopApp.',1,dev('<div class="col"><div class="mod" style="border-style:solid;border-color:var(--dvacc)">shared (commonMain, androidMain, desktopMain)</div><div class="row"><div class="mod" style="flex:1">androidApp</div><div class="mod" style="flex:1">desktopApp</div></div></div>')],
+['7b','Single composeApp, pin AGP 8.x','Keeps your original layout; deprecated path.',0,dev('<div class="mod">composeApp (android + desktop)</div><div class="m" style="margin-top:6px">Blocked on AGP 9. Needs a pinned older toolchain.</div>')],
+['7c','Skip Nuvio in v1','Revisit after a source-level API study.',1,dev('<div class="row sp"><b>Stremio</b><span class="pill ok">v1</span></div><div class="row sp" style="margin-top:6px"><b>Nuvio</b><span class="pill w">later</span></div>')]]}
+];
+var root=document.getElementById('root'),all={};
+var h='';
+CATS.forEach(function(c){h+='<section><div class="sh"><h2>'+c.t+'</h2></div><div class="grid">';
+c.items.forEach(function(i){all[i[0]]=i[1];var risk=i[5]==='risk';
+h+='<label class="card"><div class="shot">'+i[4]+'</div><div class="meta"><input type="checkbox" id="c-'+i[0]+'" data-id="'+i[0]+'" data-rec="'+i[3]+'"><div><b><span class="id">'+i[0]+'</span>'+i[1]+(i[3]?'<span class="tag rec">recommended</span>':'')+(risk?'<span class="tag risk">unverified</span>':'')+'</b><span>'+i[2]+'</span></div></div></label>'});
+h+='</div></section>'});
+root.innerHTML=h;
+var boxes=[].slice.call(document.querySelectorAll('input[type=checkbox]'));
+function sel(){return boxes.filter(function(b){return b.checked}).map(function(b){return b.dataset.id})}
+function txt(){var s=sel();return 'FlowState vote ('+s.length+' picked): '+s.join(', ')+'\n'+s.map(function(i){return '- [x] '+i+' '+all[i]}).join('\n')}
+function upd(){document.getElementById('cnt').textContent=sel().length;try{localStorage.setItem('fs-vote',JSON.stringify(sel()))}catch(e){}}
+boxes.forEach(function(b){b.addEventListener('change',upd)});
+try{var sv=JSON.parse(localStorage.getItem('fs-vote')||'[]');boxes.forEach(function(b){b.checked=sv.indexOf(b.dataset.id)>-1})}catch(e){}
+upd();
+document.getElementById('rec').onclick=function(){boxes.forEach(function(b){b.checked=b.dataset.rec==='1'});upd()};
+document.getElementById('clr').onclick=function(){boxes.forEach(function(b){b.checked=false});upd()};
+var out=document.getElementById('out'),msg=document.getElementById('msg');
+function showT(){out.value=txt();out.style.display='block';out.select()}
+document.getElementById('show').onclick=showT;
+document.getElementById('copy').onclick=function(){var t=txt();
+try{navigator.clipboard.writeText(t).then(function(){msg.textContent='Copied. Paste it in the chat.'},showT)}catch(e){showT()}};
+</script>
